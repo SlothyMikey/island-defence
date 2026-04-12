@@ -1,0 +1,28 @@
+[gd_scene format=3 uid="uid://301iux4k7g1w"]
+
+[ext_resource type="Script" uid="uid://x5k2h6xfupwx" path="res://script/buildings/castle.gd" id="1_e7fvd"]
+[ext_resource type="Texture2D" uid="uid://5841ip08g13e" path="res://assets/Tiny Swords (Free Pack)/Buildings/Black Buildings/Castle.png" id="1_wd4n1"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_e7fvd"]
+radius = 118.0
+height = 404.0
+
+[node name="Base" type="StaticBody2D" unique_id=481916656]
+collision_mask = 3
+script = ExtResource("1_e7fvd")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1338449959]
+z_index = 6
+scale = Vector2(1.2, 1.2)
+texture = ExtResource("1_wd4n1")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=838280659]
+position = Vector2(1, 37)
+rotation = 1.5707964
+shape = SubResource("CapsuleShape2D_e7fvd")
+
+[node name="HealthBar" type="ProgressBar" parent="." unique_id=1646014825]
+offset_left = -195.0
+offset_top = -148.0
+offset_right = 194.0
+offset_bottom = -121.0

@@ -1,0 +1,48 @@
+[gd_scene format=3 uid="uid://bo2sfns6te6vb"]
+
+[ext_resource type="Script" uid="uid://cufqle00g0ybo" path="res://script/UI/ui_manager.gd" id="1_k06ii"]
+[ext_resource type="Texture2D" uid="uid://dq8wwd7p1d3xf" path="res://assets/Tiny Swords (Update 010)/UI/Buttons/Button_Blue.png" id="1_ljiw2"]
+[ext_resource type="Texture2D" uid="uid://c51mm8ks57vcn" path="res://assets/Tiny Swords (Update 010)/UI/Banners/Carved_9Slides.png" id="2_0lkaf"]
+[ext_resource type="Texture2D" uid="uid://bbp5n72x06hou" path="res://assets/Tiny Swords (Update 010)/UI/Buttons/Button_Blue_Pressed.png" id="2_ruk2a"]
+[ext_resource type="Texture2D" uid="uid://f113pspiopeu" path="res://assets/Tiny Swords (Update 010)/UI/Buttons/Button_Hover.png" id="3_k06ii"]
+[ext_resource type="Texture2D" uid="uid://dvq5pwc215aco" path="res://assets/Tiny Swords (Update 010)/UI/Buttons/Button_Disable.png" id="4_0lkaf"]
+[ext_resource type="Texture2D" uid="uid://drvp43e5rpftc" path="res://assets/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_01.png" id="7_q84nj"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_70s10"]
+
+[node name="UIManager" type="CanvasLayer" unique_id=1832498057]
+script = ExtResource("1_k06ii")
+
+[node name="ShopPanel" type="Panel" parent="." unique_id=1468564707]
+offset_top = 52.0
+offset_right = 349.0
+offset_bottom = 514.0
+theme_override_styles/panel = SubResource("StyleBoxEmpty_70s10")
+
+[node name="Background" type="TextureRect" parent="ShopPanel" unique_id=1232092706]
+layout_mode = 0
+offset_left = -46.0
+offset_top = -28.0
+offset_right = 379.0
+offset_bottom = 488.0
+texture = ExtResource("2_0lkaf")
+
+[node name="ShopToggle_Button" type="TextureButton" parent="." unique_id=536429280]
+offset_left = 15.0
+offset_top = 550.0
+offset_right = 116.0
+offset_bottom = 638.0
+texture_normal = ExtResource("1_ljiw2")
+texture_pressed = ExtResource("2_ruk2a")
+texture_hover = ExtResource("3_k06ii")
+texture_disabled = ExtResource("4_0lkaf")
+stretch_mode = 0
+
+[node name="Icon" type="TextureRect" parent="ShopToggle_Button" unique_id=2062268062]
+layout_mode = 0
+offset_left = 32.0
+offset_top = 13.0
+offset_right = 69.0
+offset_bottom = 51.0
+texture = ExtResource("7_q84nj")
+expand_mode = 1

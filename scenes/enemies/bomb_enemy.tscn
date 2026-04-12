@@ -1,0 +1,150 @@
+[gd_scene format=3 uid="uid://bm8er8ekwv7er"]
+
+[ext_resource type="Texture2D" uid="uid://dyy2fmhrm1jqe" path="res://assets/Tiny Swords (Update 010)/Factions/Goblins/Troops/Barrel/Red/Barrel_Red.png" id="1_5cygo"]
+[ext_resource type="Script" uid="uid://c1aau33wkek6y" path="res://script/enemies/bomb_enemy.gd" id="1_nkqbt"]
+[ext_resource type="Texture2D" uid="uid://bsf3bn5joypbb" path="res://assets/Tiny Swords (Update 010)/Effects/Explosion/Explosions.png" id="3_uc1rp"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_nkqbt"]
+atlas = ExtResource("1_5cygo")
+region = Rect2(512, 128, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_uc1rp"]
+atlas = ExtResource("1_5cygo")
+region = Rect2(640, 128, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_7ysk2"]
+atlas = ExtResource("1_5cygo")
+region = Rect2(0, 256, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ppi5y"]
+atlas = ExtResource("1_5cygo")
+region = Rect2(256, 640, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_k7vwh"]
+atlas = ExtResource("1_5cygo")
+region = Rect2(128, 640, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_y8c1a"]
+atlas = ExtResource("1_5cygo")
+region = Rect2(0, 640, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_e6e6b"]
+atlas = ExtResource("3_uc1rp")
+region = Rect2(0, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_2sgoy"]
+atlas = ExtResource("3_uc1rp")
+region = Rect2(192, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_p3pwg"]
+atlas = ExtResource("3_uc1rp")
+region = Rect2(384, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_iwjcf"]
+atlas = ExtResource("3_uc1rp")
+region = Rect2(576, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_jvrg0"]
+atlas = ExtResource("3_uc1rp")
+region = Rect2(768, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_w832e"]
+atlas = ExtResource("3_uc1rp")
+region = Rect2(960, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_7k66o"]
+atlas = ExtResource("3_uc1rp")
+region = Rect2(1152, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_t3m8w"]
+atlas = ExtResource("3_uc1rp")
+region = Rect2(1344, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_fc1x3"]
+atlas = ExtResource("3_uc1rp")
+region = Rect2(1536, 0, 192, 192)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_ppi5y"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_nkqbt")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_uc1rp")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_7ysk2")
+}],
+"loop": true,
+"name": &"default",
+"speed": 10.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ppi5y")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_k7vwh")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_y8c1a")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_e6e6b")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_2sgoy")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_p3pwg")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_iwjcf")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_jvrg0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_w832e")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_7k66o")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_t3m8w")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_fc1x3")
+}],
+"loop": false,
+"name": &"detonate",
+"speed": 20.0
+}]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_k7vwh"]
+radius = 25.0
+height = 64.0
+
+[node name="BombEnemy" type="CharacterBody2D" unique_id=2046361042 groups=["enemies"]]
+collision_layer = 2
+script = ExtResource("1_nkqbt")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=171316416]
+sprite_frames = SubResource("SpriteFrames_ppi5y")
+animation = &"detonate"
+autoplay = "default"
+frame = 11
+frame_progress = 1.0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=489790752]
+position = Vector2(0, 4)
+shape = SubResource("CapsuleShape2D_k7vwh")
+
+[node name="DamageSpawnPoint" type="Marker2D" parent="." unique_id=2032718197]
+position = Vector2(-17, -15)
+
+[node name="NavigationAgent2D" type="NavigationAgent2D" parent="." unique_id=470380835]
+path_desired_distance = 12.0
+target_desired_distance = 24.0
+radius = 8.0

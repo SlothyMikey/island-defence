@@ -1,0 +1,21 @@
+[gd_scene format=3 uid="uid://d2jblo0eamow"]
+
+[ext_resource type="Script" uid="uid://clfki65vnnece" path="res://script/other/damage_text.gd" id="1_psmkr"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_1x127"]
+font_size = 32
+font_color = Color(0.99060446, 0.39561677, 8.471012e-06, 1)
+outline_size = 2
+outline_color = Color(0, 0, 0, 1)
+
+[node name="DamageText" type="Marker2D" unique_id=1382004078]
+position = Vector2(12, 12)
+script = ExtResource("1_psmkr")
+
+[node name="Label" type="Label" parent="." unique_id=1706178622]
+offset_left = -50.0
+offset_top = -11.0
+offset_right = 50.0
+offset_bottom = 1.0
+label_settings = SubResource("LabelSettings_1x127")
+horizontal_alignment = 1
