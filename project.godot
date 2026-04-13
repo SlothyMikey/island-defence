@@ -15,6 +15,10 @@ run/main_scene="uid://diq7665cx0vcy"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
 
+[autoload]
+
+CursorManager="*res://script/other/cursor_manager.gd"
+
 [input]
 
 move_up={

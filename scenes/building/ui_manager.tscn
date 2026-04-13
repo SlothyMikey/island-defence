@@ -2,11 +2,18 @@
 
 [ext_resource type="Script" uid="uid://cufqle00g0ybo" path="res://script/UI/ui_manager.gd" id="1_k06ii"]
 [ext_resource type="Texture2D" uid="uid://dq8wwd7p1d3xf" path="res://assets/Tiny Swords (Update 010)/UI/Buttons/Button_Blue.png" id="1_ljiw2"]
-[ext_resource type="Texture2D" uid="uid://c51mm8ks57vcn" path="res://assets/Tiny Swords (Update 010)/UI/Banners/Carved_9Slides.png" id="2_0lkaf"]
+[ext_resource type="PackedScene" uid="uid://bfw7dlxbgf4di" path="res://scenes/building/building_shop_card.tscn" id="2_nuf8g"]
+[ext_resource type="Texture2D" uid="uid://dmc1efvif0aq0" path="res://assets/Tiny Swords (Free Pack)/UI Elements/UI Elements/Wood Table/WoodTableFix.png" id="2_q84nj"]
 [ext_resource type="Texture2D" uid="uid://bbp5n72x06hou" path="res://assets/Tiny Swords (Update 010)/UI/Buttons/Button_Blue_Pressed.png" id="2_ruk2a"]
 [ext_resource type="Texture2D" uid="uid://f113pspiopeu" path="res://assets/Tiny Swords (Update 010)/UI/Buttons/Button_Hover.png" id="3_k06ii"]
 [ext_resource type="Texture2D" uid="uid://dvq5pwc215aco" path="res://assets/Tiny Swords (Update 010)/UI/Buttons/Button_Disable.png" id="4_0lkaf"]
+[ext_resource type="Texture2D" uid="uid://b5kbxcy3a7577" path="res://assets/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_02.png" id="7_bsaba"]
 [ext_resource type="Texture2D" uid="uid://drvp43e5rpftc" path="res://assets/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_01.png" id="7_q84nj"]
+[ext_resource type="Texture2D" uid="uid://djsblnvr0ynek" path="res://assets/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_05.png" id="8_70s10"]
+[ext_resource type="Texture2D" uid="uid://b03sy5ism7s2w" path="res://assets/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_06.png" id="9_njruv"]
+[ext_resource type="Texture2D" uid="uid://dpah2e1vbtcaa" path="res://assets/Tiny Swords (Free Pack)/Buildings/Blue Buildings/House1.png" id="11_req8l"]
+[ext_resource type="Texture2D" uid="uid://cgjti7x5xndia" path="res://assets/Tiny Swords (Free Pack)/Buildings/Red Buildings/House1.png" id="12_i336x"]
+[ext_resource type="Texture2D" uid="uid://v3xbhf7nqwoc" path="res://assets/Tiny Swords (Free Pack)/Buildings/Yellow Buildings/House1.png" id="13_gv132"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_70s10"]
 
@@ -14,24 +21,183 @@
 script = ExtResource("1_k06ii")
 
 [node name="ShopPanel" type="Panel" parent="." unique_id=1468564707]
-offset_top = 52.0
-offset_right = 349.0
-offset_bottom = 514.0
+visible = false
+offset_left = 20.0
+offset_top = 65.0
+offset_right = 369.0
+offset_bottom = 527.0
 theme_override_styles/panel = SubResource("StyleBoxEmpty_70s10")
 
-[node name="Background" type="TextureRect" parent="ShopPanel" unique_id=1232092706]
+[node name="Table" type="NinePatchRect" parent="ShopPanel" unique_id=732086059]
 layout_mode = 0
-offset_left = -46.0
-offset_top = -28.0
-offset_right = 379.0
-offset_bottom = 488.0
-texture = ExtResource("2_0lkaf")
+offset_left = 185.0
+offset_top = -23.0
+offset_right = 913.0
+offset_bottom = 523.0
+texture = ExtResource("2_q84nj")
+
+[node name="Workers" type="TextureButton" parent="ShopPanel/Table" unique_id=1771474376]
+layout_mode = 0
+offset_left = 156.0
+offset_top = -25.0
+offset_right = 258.0
+offset_bottom = 73.0
+mouse_default_cursor_shape = 2
+texture_normal = ExtResource("1_ljiw2")
+texture_pressed = ExtResource("2_ruk2a")
+texture_hover = ExtResource("3_k06ii")
+texture_disabled = ExtResource("4_0lkaf")
+stretch_mode = 0
+
+[node name="Icon" type="TextureRect" parent="ShopPanel/Table/Workers" unique_id=1289414752]
+layout_mode = 0
+offset_left = 23.0
+offset_top = 14.0
+offset_right = 77.0
+offset_bottom = 62.0
+texture = ExtResource("7_bsaba")
+expand_mode = 1
+
+[node name="OffenseBuildings" type="TextureButton" parent="ShopPanel/Table" unique_id=845715717]
+layout_mode = 0
+offset_left = 306.0
+offset_top = -25.0
+offset_right = 408.0
+offset_bottom = 73.0
+mouse_default_cursor_shape = 2
+texture_normal = ExtResource("1_ljiw2")
+texture_pressed = ExtResource("2_ruk2a")
+texture_hover = ExtResource("3_k06ii")
+texture_disabled = ExtResource("4_0lkaf")
+stretch_mode = 0
+
+[node name="Icon" type="TextureRect" parent="ShopPanel/Table/OffenseBuildings" unique_id=27646359]
+layout_mode = 0
+offset_left = 27.0
+offset_top = 14.0
+offset_right = 77.0
+offset_bottom = 61.0
+texture = ExtResource("8_70s10")
+expand_mode = 1
+
+[node name="DefenseBuildings" type="TextureButton" parent="ShopPanel/Table" unique_id=623580084]
+layout_mode = 0
+offset_left = 455.0
+offset_top = -25.0
+offset_right = 557.0
+offset_bottom = 73.0
+mouse_default_cursor_shape = 2
+texture_normal = ExtResource("1_ljiw2")
+texture_pressed = ExtResource("2_ruk2a")
+texture_hover = ExtResource("3_k06ii")
+texture_disabled = ExtResource("4_0lkaf")
+stretch_mode = 0
+
+[node name="Icon" type="TextureRect" parent="ShopPanel/Table/DefenseBuildings" unique_id=513283013]
+layout_mode = 0
+offset_left = 30.0
+offset_top = 15.0
+offset_right = 74.0
+offset_bottom = 59.0
+texture = ExtResource("9_njruv")
+expand_mode = 1
+
+[node name="CategoryPanels" type="Control" parent="ShopPanel/Table" unique_id=119662849]
+anchors_preset = 0
+offset_left = 83.0
+offset_top = 94.0
+offset_right = 482.0
+offset_bottom = 417.0
+
+[node name="WorkerPanel" type="PanelContainer" parent="ShopPanel/Table/CategoryPanels" unique_id=1809043205]
+layout_mode = 0
+offset_left = -27.0
+offset_top = -36.0
+offset_right = 582.0
+offset_bottom = 360.0
+
+[node name="MarginContainer" type="MarginContainer" parent="ShopPanel/Table/CategoryPanels/WorkerPanel" unique_id=1478392570]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="WorkerScroll" type="ScrollContainer" parent="ShopPanel/Table/CategoryPanels/WorkerPanel/MarginContainer" unique_id=191407823]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="BuildingList" type="VBoxContainer" parent="ShopPanel/Table/CategoryPanels/WorkerPanel/MarginContainer/WorkerScroll" unique_id=1424651685]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="Worker1Wood" parent="ShopPanel/Table/CategoryPanels/WorkerPanel/MarginContainer/WorkerScroll/BuildingList" unique_id=972068369 instance=ExtResource("2_nuf8g")]
+layout_mode = 2
+building_id = &"worker_wood"
+building_name = "Wood Worker"
+description = "Gathers wood resources. Uses the blue pawn worker."
+building_texture = ExtResource("11_req8l")
+
+[node name="Worker2Meat" parent="ShopPanel/Table/CategoryPanels/WorkerPanel/MarginContainer/WorkerScroll/BuildingList" unique_id=1852095528 instance=ExtResource("2_nuf8g")]
+layout_mode = 2
+building_id = &"worker_meat"
+building_name = "Meat Worker"
+description = "Gathers meat resources. Uses the red pawn worker."
+building_texture = ExtResource("12_i336x")
+
+[node name="Worker3Gold" parent="ShopPanel/Table/CategoryPanels/WorkerPanel/MarginContainer/WorkerScroll/BuildingList" unique_id=1115984544 instance=ExtResource("2_nuf8g")]
+layout_mode = 2
+building_id = &"worker_gold"
+building_name = "Gold Worker"
+description = "Gathers gold resources. Uses the yellow pawn worker."
+building_texture = ExtResource("13_gv132")
+
+[node name="OffensePanel" type="PanelContainer" parent="ShopPanel/Table/CategoryPanels" unique_id=1765616818]
+visible = false
+layout_mode = 0
+offset_right = 399.0
+offset_bottom = 323.0
+
+[node name="MarginContainer" type="MarginContainer" parent="ShopPanel/Table/CategoryPanels/OffensePanel" unique_id=945884316]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="Label" type="Label" parent="ShopPanel/Table/CategoryPanels/OffensePanel/MarginContainer" unique_id=1036583439]
+layout_mode = 2
+text = "Attack buildings go here"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="DefensePanel" type="PanelContainer" parent="ShopPanel/Table/CategoryPanels" unique_id=1411112970]
+visible = false
+layout_mode = 0
+offset_right = 399.0
+offset_bottom = 323.0
+
+[node name="MarginContainer" type="MarginContainer" parent="ShopPanel/Table/CategoryPanels/DefensePanel" unique_id=1227813756]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="Label" type="Label" parent="ShopPanel/Table/CategoryPanels/DefensePanel/MarginContainer" unique_id=1480157611]
+layout_mode = 2
+text = "Defense buildings go here"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="ShopToggle_Button" type="TextureButton" parent="." unique_id=536429280]
-offset_left = 15.0
-offset_top = 550.0
-offset_right = 116.0
-offset_bottom = 638.0
+offset_left = 2.0
+offset_top = 293.0
+offset_right = 70.0
+offset_bottom = 357.0
+mouse_default_cursor_shape = 2
 texture_normal = ExtResource("1_ljiw2")
 texture_pressed = ExtResource("2_ruk2a")
 texture_hover = ExtResource("3_k06ii")
@@ -40,9 +206,9 @@ stretch_mode = 0
 
 [node name="Icon" type="TextureRect" parent="ShopToggle_Button" unique_id=2062268062]
 layout_mode = 0
-offset_left = 32.0
-offset_top = 13.0
-offset_right = 69.0
-offset_bottom = 51.0
+offset_left = 21.0
+offset_top = 12.0
+offset_right = 48.0
+offset_bottom = 37.0
 texture = ExtResource("7_q84nj")
 expand_mode = 1
