@@ -8,6 +8,7 @@ extends CanvasLayer
 @onready var worker_icon: TextureRect = $ShopPanel/Table/Workers/Icon
 @onready var offense_icon: TextureRect = $ShopPanel/Table/OffenseBuildings/Icon
 @onready var defense_icon: TextureRect = $ShopPanel/Table/DefenseBuildings/Icon
+@onready var resource_holder_panel: Control = $ResourceHolderPanel
 
 @onready var worker_panel: Control = $ShopPanel/Table/CategoryPanels/WorkerPanel
 @onready var offense_panel: Control = $ShopPanel/Table/CategoryPanels/OffensePanel
@@ -116,3 +117,11 @@ func _update_category_button_visual(button: TextureButton, icon: TextureRect, de
 	button.disabled = is_active
 	icon.modulate = ACTIVE_ICON_MODULATE if is_active else INACTIVE_ICON_MODULATE
 	icon.position = default_icon_pos + Vector2(0, ACTIVE_ICON_OFFSET_Y if is_active else 0)
+
+func set_resource_amount(resource_id: StringName, amount: int) -> void:
+	if resource_holder_panel != null:
+		resource_holder_panel.call("set_resource_amount", resource_id, amount)
+
+func set_resource_icon(resource_id: StringName, icon: Texture2D) -> void:
+	if resource_holder_panel != null:
+		resource_holder_panel.call("set_resource_icon", resource_id, icon)

@@ -11,6 +11,7 @@
 [ext_resource type="Texture2D" uid="uid://drvp43e5rpftc" path="res://assets/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_01.png" id="7_q84nj"]
 [ext_resource type="Texture2D" uid="uid://djsblnvr0ynek" path="res://assets/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_05.png" id="8_70s10"]
 [ext_resource type="Texture2D" uid="uid://b03sy5ism7s2w" path="res://assets/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_06.png" id="9_njruv"]
+[ext_resource type="PackedScene" uid="uid://b8nqj52cqfso4" path="res://scenes/building/resource_holder_panel.tscn" id="10_gdt6a"]
 [ext_resource type="Texture2D" uid="uid://dpah2e1vbtcaa" path="res://assets/Tiny Swords (Free Pack)/Buildings/Blue Buildings/House1.png" id="11_req8l"]
 [ext_resource type="Texture2D" uid="uid://cgjti7x5xndia" path="res://assets/Tiny Swords (Free Pack)/Buildings/Red Buildings/House1.png" id="12_i336x"]
 [ext_resource type="Texture2D" uid="uid://v3xbhf7nqwoc" path="res://assets/Tiny Swords (Free Pack)/Buildings/Yellow Buildings/House1.png" id="13_gv132"]
@@ -22,6 +23,7 @@ script = ExtResource("1_k06ii")
 
 [node name="ShopPanel" type="Panel" parent="." unique_id=1468564707]
 visible = false
+z_index = 2
 offset_left = 20.0
 offset_top = 65.0
 offset_right = 369.0
@@ -143,8 +145,8 @@ building_texture = ExtResource("11_req8l")
 [node name="Worker2Meat" parent="ShopPanel/Table/CategoryPanels/WorkerPanel/MarginContainer/WorkerScroll/BuildingList" unique_id=1852095528 instance=ExtResource("2_nuf8g")]
 layout_mode = 2
 building_id = &"worker_meat"
-building_name = "Meat Worker"
-description = "Gathers meat resources. Uses the red pawn worker."
+building_name = "Food Worker"
+description = "Gathers food resources. Uses the red pawn worker."
 building_texture = ExtResource("12_i336x")
 
 [node name="Worker3Gold" parent="ShopPanel/Table/CategoryPanels/WorkerPanel/MarginContainer/WorkerScroll/BuildingList" unique_id=1115984544 instance=ExtResource("2_nuf8g")]
@@ -212,3 +214,9 @@ offset_right = 48.0
 offset_bottom = 37.0
 texture = ExtResource("7_q84nj")
 expand_mode = 1
+
+[node name="ResourceHolderPanel" parent="." unique_id=1472987931 instance=ExtResource("10_gdt6a")]
+offset_left = 9.0
+offset_top = 10.0
+offset_right = 397.0
+offset_bottom = 82.0

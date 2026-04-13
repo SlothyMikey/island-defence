@@ -1,0 +1,39 @@
+[gd_scene format=3 uid="uid://b8nqj52cqfso4"]
+
+[ext_resource type="Script" uid="uid://tuo52dbelfxe" path="res://script/UI/resource_holder_panel.gd" id="1_4qofc"]
+[ext_resource type="PackedScene" uid="uid://clea2k0b7wmiv" path="res://scenes/building/resource_slot.tscn" id="2_dfjdh"]
+[ext_resource type="Texture2D" uid="uid://ckeu28rsdx7k0" path="res://assets/Tiny Swords (Free Pack)/Terrain/Resources/Meat/Meat Resource/Meat Resource.png" id="4_74tnu"]
+[ext_resource type="Texture2D" uid="uid://dsaqjuqdysl2a" path="res://assets/Tiny Swords (Free Pack)/Terrain/Resources/Gold/Gold Resource/Gold_Resource.png" id="5_xjo2h"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_6hwq1"]
+
+[node name="ResourceHolderPanel" type="Panel" unique_id=698771383]
+custom_minimum_size = Vector2(388, 56)
+theme_override_styles/panel = SubResource("StyleBoxEmpty_6hwq1")
+script = ExtResource("1_4qofc")
+
+[node name="Padding" type="MarginContainer" parent="." unique_id=987909557]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="SlotsRow" type="HBoxContainer" parent="Padding" unique_id=1681467933]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Wood" parent="Padding/SlotsRow" unique_id=857079683 instance=ExtResource("2_dfjdh")]
+layout_mode = 2
+resource_id = &"wood"
+
+[node name="Food" parent="Padding/SlotsRow" unique_id=348784624 instance=ExtResource("2_dfjdh")]
+layout_mode = 2
+resource_id = &"food"
+icon = ExtResource("4_74tnu")
+
+[node name="Gold" parent="Padding/SlotsRow" unique_id=1010194682 instance=ExtResource("2_dfjdh")]
+layout_mode = 2
+resource_id = &"gold"
+icon = ExtResource("5_xjo2h")
