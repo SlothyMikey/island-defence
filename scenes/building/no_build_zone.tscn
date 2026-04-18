@@ -1,0 +1,17 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://script/buildings/no_build_zone.gd" id="1_xd6l3"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_no_build_zone"]
+size = Vector2(220, 110)
+
+[node name="NoBuildZone" type="Area2D" groups=["no_build_zone"]]
+monitoring = false
+monitorable = true
+collision_layer = 1
+collision_mask = 1
+script = ExtResource("1_xd6l3")
+zone_size = Vector2(220, 110)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_no_build_zone")

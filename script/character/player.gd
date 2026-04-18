@@ -13,6 +13,7 @@ var facing_right := true
 var combo_step := 0
 var attack_queued := false
 var is_defending := false
+var input_locked := false
 
 func _ready() -> void:
 	attack_shape.disabled = true
@@ -20,6 +21,17 @@ func _ready() -> void:
 	animated_sprite.animation_finished.connect(_on_animation_finished)
 
 func _physics_process(_delta: float) -> void:
+	if input_locked:
+		velocity = Vector2.ZERO
+		is_attacking = false
+		is_defending = false
+		attack_queued = false
+		combo_step = 0
+		attack_shape.disabled = true
+		animated_sprite.play("idle")
+		move_and_slide()
+		return
+
 	if Input.is_action_pressed("defend") and not is_attacking:
 		start_defend()
 	else:
@@ -121,3 +133,6 @@ func _on_animation_finished() -> void:
 	elif animated_sprite.animation == "attack_2":
 		is_attacking = false
 		combo_step = 0
+
+func set_input_locked(value: bool) -> void:
+	input_locked = value

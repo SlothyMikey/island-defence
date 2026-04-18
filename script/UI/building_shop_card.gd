@@ -1,6 +1,6 @@
 extends Button
 
-signal building_selected(building_id: StringName)
+signal building_selected(building_id: StringName, gold_cost: int)
 
 @export var building_id: StringName = &""
 @export var building_name: String = "Building Name":
@@ -32,6 +32,9 @@ signal building_selected(building_id: StringName)
 @onready var quantity_label: Label = $CardBody/CardPadding/Content/TextColumn/MetaRow/QuantityLabel
 @onready var gold_cost_label: Label = $CardBody/CardPadding/Content/TextColumn/MetaRow/GoldRow/GoldCostLabel
 
+const ENABLED_MODULATE := Color(1.0, 1.0, 1.0, 1.0)
+const DISABLED_MODULATE := Color(0.62, 0.62, 0.62, 0.95)
+
 func _ready() -> void:
 	pressed.connect(_on_pressed)
 	mouse_entered.connect(_on_mouse_entered)
@@ -41,9 +44,11 @@ func _ready() -> void:
 	_update_ui()
 
 func _on_pressed() -> void:
-	building_selected.emit(building_id)
+	building_selected.emit(building_id, gold_cost)
 
 func _on_mouse_entered() -> void:
+	if disabled:
+		return
 	hover_tint.visible = true
 	card_body.position = Vector2(0, -1)
 
@@ -52,10 +57,17 @@ func _on_mouse_exited() -> void:
 	card_body.position = Vector2.ZERO
 
 func _on_button_down() -> void:
+	if disabled:
+		return
 	card_body.position = Vector2(0, 1)
 
 func _on_button_up() -> void:
 	card_body.position = Vector2(0, -1) if is_hovered() else Vector2.ZERO
+
+func set_purchase_enabled(value: bool) -> void:
+	disabled = not value
+	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND if value else Control.CURSOR_ARROW
+	_update_ui()
 
 func _update_ui() -> void:
 	if not is_node_ready():
@@ -68,3 +80,5 @@ func _update_ui() -> void:
 	quantity_label.text = "Owned: %d" % quantity
 	if gold_cost_label:
 		gold_cost_label.text = str(gold_cost)
+	card_body.modulate = ENABLED_MODULATE if not disabled else DISABLED_MODULATE
+	hover_tint.visible = hover_tint.visible and not disabled

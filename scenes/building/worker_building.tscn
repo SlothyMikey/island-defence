@@ -1,0 +1,44 @@
+[gd_scene format=3 uid="uid://c0bus08o35ty1"]
+
+[ext_resource type="Script" uid="uid://3e2f2nsfx1x0" path="res://script/buildings/worker_building.gd" id="1_h50d4"]
+[ext_resource type="Texture2D" uid="uid://dpah2e1vbtcaa" path="res://assets/Tiny Swords (Free Pack)/Buildings/Blue Buildings/House1.png" id="2_h50d4"]
+[ext_resource type="Texture2D" uid="uid://d1k5yisbc7tk" path="res://assets/Tiny Swords (Update 010)/UI/Pointers/03.png" id="3_h50d4"]
+[ext_resource type="Texture2D" uid="uid://caixn87qfjal1" path="res://assets/Tiny Swords (Update 010)/UI/Pointers/04.png" id="4_h50d4"]
+[ext_resource type="Texture2D" uid="uid://dt7mb638xycen" path="res://assets/Tiny Swords (Update 010)/UI/Pointers/05.png" id="5_h50d4"]
+[ext_resource type="Texture2D" uid="uid://bjvltqu6ofwou" path="res://assets/Tiny Swords (Update 010)/UI/Pointers/06.png" id="6_h8wcc"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_h8wcc"]
+radius = 52.5
+height = 138.0
+
+[node name="WorkerBuilding" type="Node2D" unique_id=1929986625]
+z_index = 2
+script = ExtResource("1_h50d4")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=765740052]
+position = Vector2(0, -18)
+texture = ExtResource("2_h50d4")
+
+[node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=1823144445]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D" unique_id=37635586]
+position = Vector2(0, -11)
+shape = SubResource("CapsuleShape2D_h8wcc")
+
+[node name="PlacementMarkers" type="Node2D" parent="." unique_id=828634956]
+
+[node name="TopLeft" type="Sprite2D" parent="PlacementMarkers" unique_id=553029017]
+position = Vector2(-53, -64)
+texture = ExtResource("3_h50d4")
+
+[node name="TopRight" type="Sprite2D" parent="PlacementMarkers" unique_id=1669640067]
+position = Vector2(51, -65)
+texture = ExtResource("4_h50d4")
+
+[node name="BottomLeft" type="Sprite2D" parent="PlacementMarkers" unique_id=981634253]
+position = Vector2(-54.000004, 57.5)
+texture = ExtResource("5_h50d4")
+
+[node name="BottomRight" type="Sprite2D" parent="PlacementMarkers" unique_id=1380143977]
+position = Vector2(53, 58)
+texture = ExtResource("6_h8wcc")

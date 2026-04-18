@@ -7,6 +7,13 @@ extends CharacterBody2D
 @export var waypoint_reached_distance: float = 24.0
 @export var stun_duration: float = 0.25 
 @export var explosion_damage: int = 20 
+@export var stuck_progress_epsilon: float = 0.9
+@export var stuck_repath_delay: float = 0.4
+@export var evade_duration: float = 0.25
+@export var evade_speed_multiplier: float = 0.85
+@export var detour_distance: float = 56.0
+@export_range(0.0, 1.0, 0.05) var detour_forward_weight: float = 0.25
+@export var wall_backoff_distance: float = 48.0
 
 ## NEW: How long the enemy waits at the base before blowing up (in seconds)
 @export var detonate_delay: float = .5 
@@ -21,6 +28,9 @@ var is_detonating: bool = false
 var target: Node2D = null
 var route_points: Array[Vector2] = []
 var current_route_index: int = 0
+var stuck_time_accum: float = 0.0
+var evade_time_left: float = 0.0
+var evade_direction: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
 	current_health = max_health
@@ -38,6 +48,9 @@ func _build_route() -> void:
 
 	route_points.clear()
 	current_route_index = 0
+	stuck_time_accum = 0.0
+	evade_time_left = 0.0
+	evade_direction = Vector2.ZERO
 
 	var current_scene := get_tree().current_scene
 	if current_scene == null:
@@ -76,22 +89,32 @@ func _physics_process(_delta: float) -> void:
 
 	route_points[route_points.size() - 1] = target.global_position
 	var current_target: Vector2 = route_points[current_route_index]
+	var distance_before_move: float = global_position.distance_to(current_target)
+	var collision_normal: Vector2 = Vector2.ZERO
 
 	# 1. Apply velocity and move with physics
-	var direction := global_position.direction_to(current_target)
-	velocity = direction * speed
+	var direction: Vector2 = global_position.direction_to(current_target)
+	if evade_time_left > 0.0:
+		evade_time_left = maxf(evade_time_left - _delta, 0.0)
+		velocity = evade_direction * speed * evade_speed_multiplier
+	else:
+		velocity = direction * speed
 	move_and_slide() 
 
 	# NEW 2. Check if we physically crashed into the base!
 	for i in get_slide_collision_count():
-		var collision = get_slide_collision(i)
-		var collider = collision.get_collider()
+		var collision: KinematicCollision2D = get_slide_collision(i)
+		if collision_normal == Vector2.ZERO and collision != null:
+			collision_normal = collision.get_normal()
+		var collider_node: Node = collision.get_collider() as Node
 		
 		# If the thing we bumped into is in the 'base' group, blow up!
-		if collider != null and collider.is_in_group("base"):
+		if collider_node != null and collider_node.is_in_group("base"):
 			velocity = Vector2.ZERO
 			detonate()
 			return
+
+	_update_stuck_recovery(_delta, current_target, distance_before_move, direction, collision_normal)
 
 	# 3. Normal distance check for intermediate waypoints
 	if global_position.distance_to(current_target) <= waypoint_reached_distance:
@@ -142,3 +165,74 @@ func detonate() -> void:
 
 func die() -> void:
 	queue_free()
+
+func _update_stuck_recovery(delta: float, current_target: Vector2, distance_before_move: float, move_direction: Vector2, collision_normal: Vector2) -> void:
+	if evade_time_left > 0.0:
+		return
+
+	var distance_after_move: float = global_position.distance_to(current_target)
+	var moved_toward_target: float = distance_before_move - distance_after_move
+	var is_blocked: bool = get_slide_collision_count() > 0
+
+	if is_blocked and moved_toward_target <= stuck_progress_epsilon:
+		stuck_time_accum += delta
+	else:
+		stuck_time_accum = 0.0
+
+	if stuck_time_accum < stuck_repath_delay:
+		return
+
+	stuck_time_accum = 0.0
+	_start_evade(move_direction, collision_normal)
+
+func _start_evade(move_direction: Vector2, collision_normal: Vector2) -> void:
+	var backoff_direction: Vector2 = _compute_backoff_direction(move_direction, collision_normal)
+	var detour_direction: Vector2 = _compute_detour_direction(move_direction, collision_normal)
+	evade_direction = backoff_direction
+	evade_time_left = evade_duration
+	_insert_escape_waypoints(backoff_direction, detour_direction)
+
+func _compute_backoff_direction(move_direction: Vector2, collision_normal: Vector2) -> Vector2:
+	if collision_normal.length_squared() > 0.0001:
+		return collision_normal.normalized()
+	if move_direction.length_squared() > 0.0001:
+		return (-move_direction).normalized()
+	return Vector2.LEFT
+
+func _compute_detour_direction(move_direction: Vector2, collision_normal: Vector2) -> Vector2:
+	if collision_normal.length_squared() > 0.0001:
+		var tangent := Vector2(-collision_normal.y, collision_normal.x)
+		if tangent.dot(move_direction) < 0.0:
+			tangent = -tangent
+		var blended := tangent + (collision_normal * 0.5) + (move_direction * detour_forward_weight)
+		if blended.length_squared() > 0.0001:
+			return blended.normalized()
+
+	var side_sign: float = -1.0 if randf() < 0.5 else 1.0
+	var fallback := Vector2(-move_direction.y, move_direction.x) * side_sign
+	if fallback.length_squared() <= 0.0001:
+		fallback = Vector2.LEFT
+	return fallback.normalized()
+
+func _insert_detour_waypoint(direction: Vector2) -> void:
+	if route_points.is_empty():
+		return
+	var detour_point: Vector2 = global_position + direction * detour_distance
+	if current_route_index < route_points.size():
+		route_points.insert(current_route_index, detour_point)
+	else:
+		route_points.append(detour_point)
+
+func _insert_escape_waypoints(backoff_direction: Vector2, detour_direction: Vector2) -> void:
+	if route_points.is_empty():
+		return
+
+	var backoff_point: Vector2 = global_position + backoff_direction * wall_backoff_distance
+	var detour_point: Vector2 = backoff_point + detour_direction * detour_distance
+
+	if current_route_index < route_points.size():
+		route_points.insert(current_route_index, detour_point)
+		route_points.insert(current_route_index, backoff_point)
+	else:
+		route_points.append(backoff_point)
+		route_points.append(detour_point)
