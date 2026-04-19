@@ -4,6 +4,7 @@ signal wood_collected(amount: int)
 
 @export var move_speed: float = 120.0
 @export var tree_search_radius: float = 420.0
+@export var harvest_radius_from_home: float = 560.0
 @export var tree_reach_distance: float = 52.0
 @export var home_reach_distance: float = 24.0
 @export var waypoint_reached_distance: float = 12.0
@@ -16,9 +17,15 @@ signal wood_collected(amount: int)
 @export var detour_distance: float = 64.0
 @export_range(0.0, 1.0, 0.05) var detour_forward_weight: float = 0.3
 @export var wall_backoff_distance: float = 56.0
+@export var stuck_free_field_radius: float = 128.0
+@export var stuck_free_field_step: float = 24.0
+@export var stuck_free_field_angles: int = 16
+@export var use_tree_staging_point: bool = false
+@export var tree_staging_point_path: NodePath = ^"WorkerRoute/Right Approach"
 
 @onready var sprite: AnimatedSprite2D = $Sprite2D
 @onready var gather_timer: Timer = $GatherTimer
+@onready var body_collision_shape: CollisionShape2D = $CollisionShape2D
 
 var home_position: Vector2 = Vector2.ZERO
 var home_building_body: PhysicsBody2D
@@ -29,6 +36,8 @@ var carried_wood: int = 0
 var stuck_time_accum: float = 0.0
 var evade_time_left: float = 0.0
 var evade_direction: Vector2 = Vector2.ZERO
+var tree_staging_point: Node2D
+var heading_to_staging_point: bool = false
 
 enum WorkerState {
 	GOING_TO_TREE,
@@ -46,8 +55,12 @@ const ANIM_WOOD_CARRY: StringName = &"wood_carry_animation"
 func _ready() -> void:
 	add_to_group("worker_npc")
 	home_position = global_position
+	var current_scene: Node = get_tree().current_scene
+	if current_scene != null:
+		tree_staging_point = current_scene.get_node_or_null(tree_staging_point_path) as Node2D
 	gather_timer.wait_time = gather_interval
 	gather_timer.timeout.connect(_on_gather_timer_timeout)
+	_start_tree_search_cycle()
 	_play_idle()
 
 func _physics_process(delta: float) -> void:
@@ -61,9 +74,10 @@ func _physics_process(delta: float) -> void:
 
 func set_home_position(new_home_position: Vector2) -> void:
 	home_position = new_home_position
-	global_position = new_home_position
 	route_points.clear()
 	current_route_index = 0
+	if is_node_ready():
+		_start_tree_search_cycle()
 
 func set_assigned_house_position(new_house_position: Vector2) -> void:
 	set_home_position(new_house_position)
@@ -73,6 +87,9 @@ func set_assigned_house(building: Node) -> void:
 		home_building_body = null
 		return
 	home_building_body = building.get_node_or_null("StaticBody2D") as PhysicsBody2D
+
+func set_harvest_radius(new_radius: float) -> void:
+	harvest_radius_from_home = maxf(new_radius, 0.0)
 
 func get_assigned_house_body() -> PhysicsBody2D:
 	return home_building_body
@@ -92,6 +109,9 @@ func _on_gather_timer_timeout() -> void:
 		_enter_returning_home_state()
 
 func _find_nearest_tree() -> Node2D:
+	return _find_nearest_tree_from(global_position)
+
+func _find_nearest_tree_from(origin_position: Vector2) -> Node2D:
 	var nearest_tree: Node2D
 	var nearest_distance_sq: float = INF
 	var nearest_tree_any_distance: Node2D
@@ -105,7 +125,7 @@ func _find_nearest_tree() -> Node2D:
 		if not _is_tree_reachable(tree):
 			continue
 
-		var distance_sq: float = global_position.distance_squared_to(tree.global_position)
+		var distance_sq: float = origin_position.distance_squared_to(tree.global_position)
 		if distance_sq < nearest_any_distance_sq:
 			nearest_any_distance_sq = distance_sq
 			nearest_tree_any_distance = tree
@@ -121,7 +141,8 @@ func _find_nearest_tree() -> Node2D:
 		return nearest_tree
 	return nearest_tree_any_distance
 
-func _is_tree_valid(tree: Node2D) -> bool:
+func _is_tree_valid(tree_ref: Variant) -> bool:
+	var tree: Node2D = _get_live_tree(tree_ref)
 	if tree == null or not is_instance_valid(tree):
 		return false
 	if not tree.is_in_group("wood_resource"):
@@ -131,8 +152,16 @@ func _is_tree_valid(tree: Node2D) -> bool:
 	return true
 
 func _process_going_to_tree(delta: float) -> void:
+	if heading_to_staging_point and _has_valid_staging_point():
+		_follow_route(delta)
+		if global_position.distance_to(tree_staging_point.global_position) <= waypoint_reached_distance:
+			heading_to_staging_point = false
+			current_tree = _find_nearest_tree_from(tree_staging_point.global_position)
+			_rebuild_route_to(current_tree.global_position if current_tree != null else home_position)
+		return
+
 	if not _is_tree_valid(current_tree) or not _is_tree_reachable(current_tree):
-		current_tree = _find_nearest_tree()
+		current_tree = _find_nearest_tree_from(global_position)
 		_rebuild_route_to(current_tree.global_position if current_tree != null else home_position)
 
 	if not _is_tree_valid(current_tree) or not _is_tree_reachable(current_tree):
@@ -163,9 +192,8 @@ func _process_returning_home(delta: float) -> void:
 		if carried_wood > 0:
 			wood_collected.emit(carried_wood)
 			carried_wood = 0
-		current_tree = _find_nearest_tree()
+		_start_tree_search_cycle()
 		state = WorkerState.GOING_TO_TREE
-		_rebuild_route_to(current_tree.global_position if current_tree != null else home_position)
 
 func _enter_returning_home_state() -> void:
 	gather_timer.stop()
@@ -311,22 +339,28 @@ func _insert_escape_waypoints(backoff_direction: Vector2, detour_direction: Vect
 
 	var backoff_point: Vector2 = global_position + backoff_direction * wall_backoff_distance
 	var detour_point: Vector2 = backoff_point + detour_direction * detour_distance
+	var safe_backoff_point: Vector2 = _find_nearby_free_field(backoff_point)
+	var safe_detour_point: Vector2 = _find_nearby_free_field(detour_point)
 
 	if current_route_index < route_points.size():
-		route_points.insert(current_route_index, detour_point)
-		route_points.insert(current_route_index, backoff_point)
+		route_points.insert(current_route_index, safe_detour_point)
+		route_points.insert(current_route_index, safe_backoff_point)
 	else:
-		route_points.append(backoff_point)
-		route_points.append(detour_point)
+		route_points.append(safe_backoff_point)
+		route_points.append(safe_detour_point)
 
-func _can_start_chopping(tree: Node2D) -> bool:
+func _can_start_chopping(tree_ref: Variant) -> bool:
+	var tree: Node2D = _get_live_tree(tree_ref)
 	if not _is_tree_valid(tree):
 		return false
 	if global_position.distance_to(tree.global_position) <= tree_reach_distance:
 		return true
 	return _is_colliding_with_tree(tree)
 
-func _is_colliding_with_tree(tree: Node2D) -> bool:
+func _is_colliding_with_tree(tree_ref: Variant) -> bool:
+	var tree: Node2D = _get_live_tree(tree_ref)
+	if tree == null:
+		return false
 	for i in get_slide_collision_count():
 		var collision: KinematicCollision2D = get_slide_collision(i)
 		if collision == null:
@@ -336,8 +370,11 @@ func _is_colliding_with_tree(tree: Node2D) -> bool:
 			return true
 	return false
 
-func _is_tree_reachable(tree: Node2D) -> bool:
+func _is_tree_reachable(tree_ref: Variant) -> bool:
+	var tree: Node2D = _get_live_tree(tree_ref)
 	if tree == null:
+		return false
+	if home_position.distance_to(tree.global_position) > harvest_radius_from_home:
 		return false
 
 	var current_scene: Node = get_tree().current_scene
@@ -352,6 +389,84 @@ func _is_tree_reachable(tree: Node2D) -> bool:
 		if worker_region == -1 or tree_region == -1:
 			return false
 		return worker_region == tree_region
+
+	return true
+
+func _get_live_tree(tree_ref: Variant) -> Node2D:
+	if tree_ref == null:
+		return null
+	if not is_instance_valid(tree_ref):
+		return null
+	return tree_ref as Node2D
+
+func _start_tree_search_cycle() -> void:
+	current_tree = null
+	_reset_movement_recovery()
+
+	if use_tree_staging_point and _has_valid_staging_point():
+		heading_to_staging_point = true
+		_rebuild_route_to(tree_staging_point.global_position)
+		return
+
+	heading_to_staging_point = false
+	current_tree = _find_nearest_tree_from(global_position)
+	_rebuild_route_to(current_tree.global_position if current_tree != null else home_position)
+
+func _has_valid_staging_point() -> bool:
+	return tree_staging_point != null and is_instance_valid(tree_staging_point)
+
+func _find_nearby_free_field(preferred_position: Vector2) -> Vector2:
+	if _is_position_free_for_worker(preferred_position):
+		return preferred_position
+
+	var max_radius: float = maxf(stuck_free_field_radius, 0.0)
+	var step: float = maxf(stuck_free_field_step, 8.0)
+	var angle_count: int = maxi(stuck_free_field_angles, 8)
+
+	var radius: float = step
+	while radius <= max_radius:
+		for i in angle_count:
+			var angle: float = (TAU * float(i)) / float(angle_count)
+			var candidate := global_position + Vector2(cos(angle), sin(angle)) * radius
+			if _is_position_free_for_worker(candidate):
+				return candidate
+		radius += step
+
+	return preferred_position
+
+func _is_position_free_for_worker(candidate_position: Vector2) -> bool:
+	var current_scene: Node = get_tree().current_scene
+	if current_scene != null and current_scene.has_method("get_ground_class_at_world"):
+		var ground_class: int = int(current_scene.call("get_ground_class_at_world", candidate_position))
+		if ground_class != 2:
+			return false
+
+	if current_scene != null and current_scene.has_method("get_bottom_ground_region_id"):
+		var worker_region: int = int(current_scene.call("get_bottom_ground_region_id", global_position))
+		var candidate_region: int = int(current_scene.call("get_bottom_ground_region_id", candidate_position))
+		if worker_region == -1 or candidate_region == -1 or worker_region != candidate_region:
+			return false
+
+	if body_collision_shape == null or body_collision_shape.shape == null:
+		return true
+
+	var query := PhysicsShapeQueryParameters2D.new()
+	query.shape = body_collision_shape.shape
+	var shape_offset: Vector2 = body_collision_shape.position.rotated(global_rotation)
+	query.transform = Transform2D(global_rotation, candidate_position + shape_offset)
+	query.collide_with_bodies = true
+	query.collide_with_areas = true
+	query.exclude = [self]
+
+	var hits: Array = get_world_2d().direct_space_state.intersect_shape(query, 8)
+	for hit_variant in hits:
+		var hit: Dictionary = hit_variant as Dictionary
+		var collider_obj: Object = hit.get("collider") as Object
+		if collider_obj == null:
+			continue
+		if collider_obj == current_tree:
+			continue
+		return false
 
 	return true
 

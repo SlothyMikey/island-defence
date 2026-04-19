@@ -30,6 +30,17 @@ const WORKER_BUILDINGS := {
 		"sprite_offset": Vector2(0, -18),
 	},
 }
+const BUILDING_SELL_REFUND_RATIO: float = 0.6
+const BUILDING_UPGRADE_COST_BASE_RATIO: float = 0.65
+const BUILDING_UPGRADE_COST_GROWTH: float = 1.4
+const BUILDING_MAX_UPGRADE_LEVEL: int = 5
+const BUILDING_UPGRADE_HARVEST_RADIUS_BONUS: float = 80.0
+const BUILDING_UPGRADE_WORKER_MOVE_SPEED_BONUS: float = 12.0
+const WOOD_WORKER_BASE_MOVE_SPEED: float = 120.0
+const WORKER_HOME_TELEPORT_OFFSET := Vector2(28.0, 14.0)
+const TREE_REPLACEMENT_MIN_RADIUS: float = 120.0
+const TREE_REPLACEMENT_MAX_RADIUS: float = 280.0
+const TREE_REPLACEMENT_RANDOM_ATTEMPTS: int = 56
 
 @export var starting_wood: int = 0
 @export var starting_food: int = 0
@@ -43,6 +54,8 @@ const WORKER_BUILDINGS := {
 @export var wood_tree_min_spacing: float = 80.0
 @export var wood_tree_jitter: float = 6.0
 @export var wood_tree_ground_check_radius: float = 22.0
+@export var wood_tree_edge_clearance_radius: float = 34.0
+@export var building_edge_clearance_radius: float = 34.0
 
 @onready var player: CharacterBody2D = $CharacterScene
 @onready var ui_manager: CanvasLayer = $UI/UIManager
@@ -62,10 +75,17 @@ var owned_buildings := {}
 var active_preview: Node2D
 var active_building_id: StringName = &""
 var waiting_for_confirm_release := false
+var moving_building: Node2D
+var moving_building_original_position: Vector2 = Vector2.ZERO
+var pending_upgrade_building: Node2D
+var pending_upgrade_cost: int = 0
+var pending_upgrade_radius_bonus: float = 0.0
+var pending_upgrade_worker_speed_bonus: float = 0.0
 
 func _ready() -> void:
-	_spawn_initial_wood_trees()
 	_build_bottom_ground_regions()
+	_spawn_initial_wood_trees()
+	_register_existing_tree_resources()
 
 	resources[&"wood"] = starting_wood
 	resources[&"food"] = starting_food
@@ -120,10 +140,9 @@ func _begin_placement(building_id: StringName) -> void:
 	ui_manager.call("close_shop_immediately")
 	_set_placement_pause_state(true)
 	ui_manager.call("set_shop_toggle_enabled", false)
-	player.call("set_input_locked", true)
 
 	active_preview = WORKER_BUILDING_SCENE.instantiate()
-	active_preview.call("configure", WORKER_BUILDINGS[building_id])
+	active_preview.call("configure", _get_building_config(building_id))
 	active_preview.process_mode = Node.PROCESS_MODE_ALWAYS
 	add_child(active_preview)
 	active_preview.call("set_preview_mode", true)
@@ -131,28 +150,57 @@ func _begin_placement(building_id: StringName) -> void:
 
 func _cancel_active_preview() -> void:
 	if active_preview != null:
-		active_preview.queue_free()
+		if _is_moving_existing_building():
+			moving_building.global_position = moving_building_original_position
+			moving_building.call("set_preview_mode", false)
+		else:
+			active_preview.queue_free()
 	active_preview = null
 	active_building_id = &""
 	waiting_for_confirm_release = false
+	moving_building = null
+	moving_building_original_position = Vector2.ZERO
 	_set_placement_pause_state(false)
 	ui_manager.call("set_shop_toggle_enabled", true)
-	player.call("set_input_locked", false)
 
 func _confirm_active_preview() -> void:
+	if _is_moving_existing_building():
+		var moved_building: Node2D = moving_building
+		var placement_position: Vector2 = active_preview.global_position
+		active_preview = null
+		active_building_id = &""
+		waiting_for_confirm_release = false
+		moving_building = null
+		moving_building_original_position = Vector2.ZERO
+		_set_placement_pause_state(false)
+		ui_manager.call("set_shop_toggle_enabled", true)
+
+		moved_building.global_position = placement_position
+		moved_building.call("set_preview_mode", false)
+		_update_workers_assigned_house_position(moved_building)
+		_teleport_workers_assigned_to_building(moved_building)
+		_refresh_all_worker_building_collisions()
+		return
+
 	var building_id: StringName = active_building_id
 	var placement_position: Vector2 = active_preview.global_position
 	_cancel_active_preview()
+	var building_config: Dictionary = _get_building_config(building_id)
 
 	var building: Node2D = WORKER_BUILDING_SCENE.instantiate() as Node2D
-	building.call("configure", WORKER_BUILDINGS[building_id])
+	building.call("configure", building_config)
 	building.global_position = placement_position
+	building.connect("upgrade_requested", Callable(self, "_on_worker_building_upgrade_requested"))
+	building.connect("upgrade_confirmed", Callable(self, "_on_worker_building_upgrade_confirmed"))
+	building.connect("upgrade_canceled", Callable(self, "_on_worker_building_upgrade_canceled"))
+	building.connect("move_requested", Callable(self, "_on_worker_building_move_requested"))
+	building.connect("sell_requested", Callable(self, "_on_worker_building_sell_requested"))
 	main_building_root.add_child(building)
 	_spawn_worker_for_building(building_id, building)
 	_refresh_all_worker_building_collisions()
 
 	owned_buildings[building_id] += 1
-	resources[&"gold"] -= WORKER_BUILDINGS[building_id]["gold_cost"]
+	resources[&"gold"] -= int(building_config["gold_cost"])
 	ui_manager.call("set_building_quantity", building_id, owned_buildings[building_id])
 	ui_manager.call("set_resource_amount", &"gold", resources[&"gold"])
 	_refresh_building_availability()
@@ -216,6 +264,8 @@ func _is_on_stable_ground() -> bool:
 		# not on TopGround or mixed top+bottom cells.
 		if ground_class != 2:
 			return false
+		if not _is_bottom_ground_with_clearance(sample_point, building_edge_clearance_radius):
+			return false
 
 	return true
 
@@ -274,24 +324,31 @@ func get_bottom_ground_region_id(world_position: Vector2) -> int:
 	return int(bottom_ground_regions[bottom_cell])
 
 func _set_placement_pause_state(is_paused: bool) -> void:
-	# Placement freeze uses time_scale so global tree pause remains dedicated to shop pause.
-	Engine.time_scale = 0.0 if is_paused else 1.0
+	# Placement mode should not pause active gameplay.
+	# Keep time scale at normal speed regardless of placement state.
+	Engine.time_scale = 1.0
 
 func _spawn_worker_for_building(building_id: StringName, building: Node2D) -> void:
 	if building_id != &"worker_wood":
 		return
 
 	var worker: CharacterBody2D = WOOD_WORKER_SCENE.instantiate() as CharacterBody2D
-	worker.global_position = building.global_position + Vector2(28.0, 14.0)
+	worker.global_position = building.global_position + WORKER_HOME_TELEPORT_OFFSET
 	main_building_root.add_child(worker)
 	# Use the building center as the worker home target to avoid edge/cliff oscillation.
 	worker.call("set_assigned_house_position", building.global_position)
 	worker.call("set_assigned_house", building)
+	var harvest_radius: float = float(building.get("harvest_radius"))
+	worker.call("set_harvest_radius", harvest_radius)
 	worker.connect("wood_collected", Callable(self, "_on_wood_worker_collected"))
+
+func _get_building_config(building_id: StringName) -> Dictionary:
+	return WORKER_BUILDINGS[building_id].duplicate()
 
 func _refresh_all_worker_building_collisions() -> void:
 	var workers: Array = get_tree().get_nodes_in_group("worker_npc")
 	var building_bodies: Array[PhysicsBody2D] = _get_worker_building_bodies()
+	var tree_bodies: Array[PhysicsBody2D] = _get_tree_resource_bodies()
 
 	for worker_variant in workers:
 		var worker_body := worker_variant as CharacterBody2D
@@ -313,6 +370,9 @@ func _refresh_all_worker_building_collisions() -> void:
 		for house_body in building_bodies:
 			worker_body.add_collision_exception_with(house_body)
 
+		for tree_body in tree_bodies:
+			worker_body.add_collision_exception_with(tree_body)
+
 func _get_worker_building_bodies() -> Array[PhysicsBody2D]:
 	var bodies: Array[PhysicsBody2D] = []
 	for child in main_building_root.get_children():
@@ -324,9 +384,246 @@ func _get_worker_building_bodies() -> Array[PhysicsBody2D]:
 			bodies.append(body)
 	return bodies
 
+func _get_tree_resource_bodies() -> Array[PhysicsBody2D]:
+	var bodies: Array[PhysicsBody2D] = []
+	for tree_variant in get_tree().get_nodes_in_group("wood_resource"):
+		var tree_body := tree_variant as PhysicsBody2D
+		if tree_body != null:
+			bodies.append(tree_body)
+	return bodies
+
 func _on_wood_worker_collected(amount: int) -> void:
 	resources[&"wood"] += amount
 	ui_manager.call("set_resource_amount", &"wood", resources[&"wood"])
+
+func _on_worker_building_upgrade_requested(building: Node2D) -> void:
+	if building == null or not is_instance_valid(building):
+		return
+	if active_preview != null:
+		return
+
+	var building_id: StringName = building.get("building_id") as StringName
+	if not WORKER_BUILDINGS.has(building_id):
+		return
+
+	var current_level: int = int(building.get("upgrade_level"))
+	if current_level >= BUILDING_MAX_UPGRADE_LEVEL:
+		_clear_pending_upgrade()
+		building.call(
+			"show_upgrade_popup",
+			"Level %d" % current_level,
+			"MAX",
+			"Building is already max level (%d)." % BUILDING_MAX_UPGRADE_LEVEL,
+			false,
+			true
+		)
+		return
+
+	var next_level: int = current_level + 1
+	var upgrade_cost: int = _get_upgrade_cost(building_id, next_level)
+	var current_harvest_radius: float = float(building.get("harvest_radius"))
+	var next_harvest_radius: float = current_harvest_radius + BUILDING_UPGRADE_HARVEST_RADIUS_BONUS
+
+	var workers: Array[CharacterBody2D] = _get_workers_assigned_to_building(building)
+	var current_worker_speed: float = WOOD_WORKER_BASE_MOVE_SPEED + (float(current_level) * BUILDING_UPGRADE_WORKER_MOVE_SPEED_BONUS)
+	if not workers.is_empty():
+		current_worker_speed = float(workers[0].get("move_speed"))
+	var next_worker_speed: float = current_worker_speed + BUILDING_UPGRADE_WORKER_MOVE_SPEED_BONUS
+
+	pending_upgrade_building = building
+	pending_upgrade_cost = upgrade_cost
+	pending_upgrade_radius_bonus = BUILDING_UPGRADE_HARVEST_RADIUS_BONUS
+	pending_upgrade_worker_speed_bonus = BUILDING_UPGRADE_WORKER_MOVE_SPEED_BONUS
+
+	var affordability_text := "Affordable" if resources[&"gold"] >= upgrade_cost else "Not enough gold"
+	var dark_text_color := "#2E2419"
+	var old_value_color := "#C44B4B"
+	var new_value_color := "#2EA65F"
+	var status_color := new_value_color if resources[&"gold"] >= upgrade_cost else old_value_color
+	var upgrade_details := (
+		"[center][b][color=%s]Current Lv [/color][color=%s]%d[/color][color=%s] -> Next Lv [/color][color=%s]%d[/color][/b][/center]\n\n"
+		+ "[b][color=%s]Harvest Radius:[/color][/b] [color=%s]%.0f[/color][color=%s] -> [/color][color=%s]%.0f[/color] ([color=%s]+%.0f[/color])\n\n"
+		+ "[b][color=%s]Move Speed:[/color][/b] [color=%s]%.0f[/color][color=%s] -> [/color][color=%s]%.0f[/color] ([color=%s]+%.0f[/color])\n\n"
+		+ "[b][color=%s]Status:[/color][/b] [color=%s]%s[/color]"
+	) % [
+		dark_text_color,
+		old_value_color,
+		current_level,
+		dark_text_color,
+		new_value_color,
+		next_level,
+		dark_text_color,
+		old_value_color,
+		current_harvest_radius,
+		dark_text_color,
+		new_value_color,
+		next_harvest_radius,
+		new_value_color,
+		pending_upgrade_radius_bonus,
+		dark_text_color,
+		old_value_color,
+		current_worker_speed,
+		dark_text_color,
+		new_value_color,
+		next_worker_speed,
+		new_value_color,
+		pending_upgrade_worker_speed_bonus,
+		dark_text_color,
+		status_color,
+		affordability_text,
+	]
+	building.call(
+		"show_upgrade_popup",
+		"Level %d" % next_level,
+		"%d" % upgrade_cost,
+		upgrade_details,
+		resources[&"gold"] >= upgrade_cost,
+		false
+	)
+
+func _on_worker_building_move_requested(building: Node2D) -> void:
+	if building == null or not is_instance_valid(building):
+		return
+	if active_preview != null:
+		return
+	if building == pending_upgrade_building:
+		_clear_pending_upgrade()
+		building.call("hide_upgrade_popup")
+
+	moving_building = building
+	moving_building_original_position = building.global_position
+	active_preview = building
+	active_building_id = building.get("building_id") as StringName
+	waiting_for_confirm_release = Input.is_action_pressed("attack")
+	ui_manager.call("close_shop_immediately")
+	_set_placement_pause_state(true)
+	ui_manager.call("set_shop_toggle_enabled", false)
+	get_tree().call_group("worker_building", "_set_selected", false)
+	active_preview.call("set_preview_mode", true)
+	_update_preview_position()
+
+func _on_worker_building_sell_requested(building: Node2D) -> void:
+	if building == null or not is_instance_valid(building):
+		return
+	if building == pending_upgrade_building:
+		_clear_pending_upgrade()
+
+	var building_id: StringName = building.get("building_id") as StringName
+	if WORKER_BUILDINGS.has(building_id):
+		var original_gold_cost: int = int(WORKER_BUILDINGS[building_id]["gold_cost"])
+		var refund_gold: int = int(round(float(original_gold_cost) * BUILDING_SELL_REFUND_RATIO))
+		resources[&"gold"] += refund_gold
+		ui_manager.call("set_resource_amount", &"gold", resources[&"gold"])
+
+	if owned_buildings.has(building_id):
+		owned_buildings[building_id] = maxi(int(owned_buildings[building_id]) - 1, 0)
+		ui_manager.call("set_building_quantity", building_id, owned_buildings[building_id])
+
+	_remove_assigned_workers_for_building(building)
+	building.queue_free()
+	_refresh_building_availability()
+	call_deferred("_refresh_all_worker_building_collisions")
+
+func _remove_assigned_workers_for_building(building: Node2D) -> void:
+	if building == null or not is_instance_valid(building):
+		return
+
+	var building_body: PhysicsBody2D = building.get_node_or_null("StaticBody2D") as PhysicsBody2D
+	if building_body == null:
+		return
+
+	for worker_variant in get_tree().get_nodes_in_group("worker_npc"):
+		var worker: CharacterBody2D = worker_variant as CharacterBody2D
+		if worker == null or not worker.has_method("get_assigned_house_body"):
+			continue
+		var assigned_house_body: PhysicsBody2D = worker.call("get_assigned_house_body") as PhysicsBody2D
+		if assigned_house_body == building_body:
+			worker.queue_free()
+
+func _update_workers_assigned_house_position(building: Node2D) -> void:
+	if building == null or not is_instance_valid(building):
+		return
+
+	var building_body: PhysicsBody2D = building.get_node_or_null("StaticBody2D") as PhysicsBody2D
+	if building_body == null:
+		return
+
+	for worker_variant in get_tree().get_nodes_in_group("worker_npc"):
+		var worker: CharacterBody2D = worker_variant as CharacterBody2D
+		if worker == null or not worker.has_method("get_assigned_house_body"):
+			continue
+		var assigned_house_body: PhysicsBody2D = worker.call("get_assigned_house_body") as PhysicsBody2D
+		if assigned_house_body != building_body:
+			continue
+		if worker.has_method("set_assigned_house_position"):
+			worker.call("set_assigned_house_position", building.global_position)
+
+func _get_workers_assigned_to_building(building: Node2D) -> Array[CharacterBody2D]:
+	var workers: Array[CharacterBody2D] = []
+	if building == null or not is_instance_valid(building):
+		return workers
+
+	var building_body: PhysicsBody2D = building.get_node_or_null("StaticBody2D") as PhysicsBody2D
+	if building_body == null:
+		return workers
+
+	for worker_variant in get_tree().get_nodes_in_group("worker_npc"):
+		var worker: CharacterBody2D = worker_variant as CharacterBody2D
+		if worker == null or not worker.has_method("get_assigned_house_body"):
+			continue
+		var assigned_house_body: PhysicsBody2D = worker.call("get_assigned_house_body") as PhysicsBody2D
+		if assigned_house_body == building_body:
+			workers.append(worker)
+	return workers
+
+func _teleport_workers_assigned_to_building(building: Node2D) -> void:
+	for worker in _get_workers_assigned_to_building(building):
+		worker.global_position = building.global_position + WORKER_HOME_TELEPORT_OFFSET
+		worker.velocity = Vector2.ZERO
+
+func _is_moving_existing_building() -> bool:
+	return moving_building != null and active_preview == moving_building and is_instance_valid(moving_building)
+
+func _on_worker_building_upgrade_confirmed(building: Node2D) -> void:
+	if building == null or not is_instance_valid(building):
+		_clear_pending_upgrade()
+		return
+	if building != pending_upgrade_building:
+		return
+	if resources[&"gold"] < pending_upgrade_cost:
+		return
+
+	var next_level: int = int(building.get("upgrade_level")) + 1
+	resources[&"gold"] -= pending_upgrade_cost
+	ui_manager.call("set_resource_amount", &"gold", resources[&"gold"])
+	building.set("upgrade_level", next_level)
+	building.set("harvest_radius", float(building.get("harvest_radius")) + pending_upgrade_radius_bonus)
+
+	for worker in _get_workers_assigned_to_building(building):
+		worker.set("move_speed", float(worker.get("move_speed")) + pending_upgrade_worker_speed_bonus)
+		if worker.has_method("set_harvest_radius"):
+			worker.call("set_harvest_radius", float(building.get("harvest_radius")))
+
+	_refresh_building_availability()
+	building.call("hide_upgrade_popup")
+	_clear_pending_upgrade()
+
+func _on_worker_building_upgrade_canceled(building: Node2D) -> void:
+	if building == pending_upgrade_building:
+		_clear_pending_upgrade()
+
+func _clear_pending_upgrade() -> void:
+	pending_upgrade_building = null
+	pending_upgrade_cost = 0
+	pending_upgrade_radius_bonus = 0.0
+	pending_upgrade_worker_speed_bonus = 0.0
+
+func _get_upgrade_cost(building_id: StringName, next_level: int) -> int:
+	if not WORKER_BUILDINGS.has(building_id):
+		return 0
+	var base_cost: float = float(WORKER_BUILDINGS[building_id]["gold_cost"]) * BUILDING_UPGRADE_COST_BASE_RATIO
+	var growth_multiplier: float = pow(BUILDING_UPGRADE_COST_GROWTH, float(maxi(next_level - 1, 0)))
+	return maxi(int(round(base_cost * growth_multiplier)), 1)
 
 func _spawn_initial_wood_trees() -> void:
 	if not spawn_random_wood_trees:
@@ -379,7 +676,78 @@ func _spawn_initial_wood_trees() -> void:
 		var tree: Node2D = TREE_RESOURCE_SCENE.instantiate() as Node2D
 		tree.global_position = jittered_position
 		wood_resources_root.add_child(tree)
+		_register_tree_resource(tree)
 		spawned_positions.append(jittered_position)
+
+func _register_existing_tree_resources() -> void:
+	for tree_variant in get_tree().get_nodes_in_group("wood_resource"):
+		var tree_node := tree_variant as Node2D
+		if tree_node != null:
+			_register_tree_resource(tree_node)
+
+func _register_tree_resource(tree: Node2D) -> void:
+	if tree == null or not is_instance_valid(tree):
+		return
+	if tree.has_signal("depleted"):
+		var callback := Callable(self, "_on_tree_resource_depleted")
+		if not tree.is_connected("depleted", callback):
+			tree.connect("depleted", callback)
+
+func _on_tree_resource_depleted(tree: Node2D) -> void:
+	var depleted_position: Vector2 = tree.global_position if tree != null and is_instance_valid(tree) else Vector2.ZERO
+	call_deferred("_spawn_replacement_wood_tree", depleted_position)
+
+func _spawn_replacement_wood_tree(preferred_position: Vector2) -> void:
+	if TREE_RESOURCE_SCENE == null:
+		return
+	if wood_resources_root == null:
+		wood_resources_root = get_node_or_null("WoodResources") as Node2D
+	if wood_resources_root == null:
+		wood_resources_root = Node2D.new()
+		wood_resources_root.name = "WoodResources"
+		add_child(wood_resources_root)
+
+	var spawn_position := _find_valid_tree_spawn_near(preferred_position)
+	if spawn_position == Vector2.INF:
+		return
+
+	var new_tree: Node2D = TREE_RESOURCE_SCENE.instantiate() as Node2D
+	new_tree.global_position = spawn_position
+	wood_resources_root.add_child(new_tree)
+	_register_tree_resource(new_tree)
+	call_deferred("_refresh_all_worker_building_collisions")
+
+func _find_valid_tree_spawn_near(origin: Vector2) -> Vector2:
+	var current_scene: Node = get_tree().current_scene
+	if current_scene == null:
+		return Vector2.INF
+
+	# Prefer random respawn offsets with spacing, not nearest replacement.
+	var min_radius: float = maxf(TREE_REPLACEMENT_MIN_RADIUS, wood_tree_min_spacing + 24.0)
+	var max_radius: float = maxf(TREE_REPLACEMENT_MAX_RADIUS, min_radius + 80.0)
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+
+	for i in TREE_REPLACEMENT_RANDOM_ATTEMPTS:
+		var angle: float = rng.randf_range(0.0, TAU)
+		var radius: float = rng.randf_range(min_radius, max_radius)
+		var candidate := origin + Vector2(cos(angle), sin(angle)) * radius
+		if _is_valid_bottom_tree_position(candidate):
+			return candidate
+
+	# Fallback: deterministic rings in a broader radius to avoid failed replacement.
+	var ring_steps: int = 24
+	var fallback_radius: float = min_radius
+	var fallback_max_radius: float = max_radius + 240.0
+	while fallback_radius <= fallback_max_radius:
+		for step in ring_steps:
+			var angle := TAU * float(step) / float(ring_steps)
+			var candidate := origin + Vector2(cos(angle), sin(angle)) * fallback_radius
+			if _is_valid_bottom_tree_position(candidate):
+				return candidate
+		fallback_radius += 40.0
+
+	return Vector2.INF
 
 func _get_bottom_ground_candidate_positions() -> Array[Vector2]:
 	var candidates: Array[Vector2] = []
@@ -407,6 +775,33 @@ func _is_valid_bottom_tree_position(world_position: Vector2) -> bool:
 
 	for sample in samples:
 		# 2 means: bottom layer present and top layer absent.
+		if get_ground_class_at_world(sample) != 2:
+			return false
+		if not _is_bottom_ground_with_clearance(sample, wood_tree_edge_clearance_radius):
+			return false
+
+	return true
+
+func _is_bottom_ground_with_clearance(center: Vector2, clearance_radius: float) -> bool:
+	if get_ground_class_at_world(center) != 2:
+		return false
+
+	var radius: float = maxf(clearance_radius, 0.0)
+	if radius <= 0.0:
+		return true
+
+	var ring_samples: Array[Vector2] = [
+		center + Vector2(radius, 0.0),
+		center + Vector2(-radius, 0.0),
+		center + Vector2(0.0, radius),
+		center + Vector2(0.0, -radius),
+		center + Vector2(radius, radius) * 0.70710678,
+		center + Vector2(radius, -radius) * 0.70710678,
+		center + Vector2(-radius, radius) * 0.70710678,
+		center + Vector2(-radius, -radius) * 0.70710678,
+	]
+
+	for sample in ring_samples:
 		if get_ground_class_at_world(sample) != 2:
 			return false
 
