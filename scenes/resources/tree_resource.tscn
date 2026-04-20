@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://cxk5tehp35m6"]
 
-[ext_resource type="Script" uid="uid://c0l3hmj15yr8m" path="res://script/buildings/tree_resource.gd" id="1_8pv52"]
+[ext_resource type="Script" uid="uid://c0l3hmj15yr8m" path="res://script/resources/tree_resource.gd" id="1_8pv52"]
 [ext_resource type="Texture2D" uid="uid://bjln7pw64qsnu" path="res://assets/Tiny Swords (Free Pack)/Terrain/Resources/Wood/Trees/Tree2.png" id="2_6o0ty"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_suma2"]
@@ -71,7 +71,7 @@ animations = [{
 radius = 34.0
 height = 90.0
 
-[node name="TreeResource" type="StaticBody2D" unique_id=1981191812 groups=["wood_resource"]]
+[node name="TreeResource" type="StaticBody2D" unique_id=1981191812 groups=["wood_resource", "tree_obstacle"]]
 z_index = 5
 script = ExtResource("1_8pv52")
 

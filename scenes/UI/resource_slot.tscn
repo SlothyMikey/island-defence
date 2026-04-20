@@ -44,11 +44,11 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="Icon" type="TextureRect" parent="Frame/IconAnchor" unique_id=330707383]
-custom_minimum_size = Vector2(28, 28)
+custom_minimum_size = Vector2(52, 52)
 layout_mode = 2
 texture = ExtResource("4_jf5y0")
-expand_mode = 3
-stretch_mode = 3
+expand_mode = 1
+stretch_mode = 5
 
 [node name="AmountLabel" type="Label" parent="." unique_id=1614069604]
 layout_mode = 0

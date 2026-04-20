@@ -1,11 +1,11 @@
 extends Node2D
 
-const WORKER_BUILDING_SCENE := preload("res://scenes/building/worker_building.tscn")
+const WOOD_WORKER_BUILDING_SCENE := preload("res://scenes/buildings/wood_worker_building.tscn")
+const FOOD_WORKER_BUILDING_SCENE := preload("res://scenes/buildings/food_worker_building.tscn")
 const WOOD_WORKER_SCENE := preload("res://scenes/character/wood_worker.tscn")
-const TREE_RESOURCE_SCENE := preload("res://scenes/building/tree_resource.tscn")
-const WOOD_RESOURCE_ICON := preload("res://assets/Tiny Swords (Free Pack)/Terrain/Resources/Wood/Wood Resource/Wood Resource.png")
-const FOOD_RESOURCE_ICON := preload("res://assets/Tiny Swords (Free Pack)/Terrain/Resources/Meat/Meat Resource/Meat Resource.png")
-const GOLD_RESOURCE_ICON := preload("res://assets/Tiny Swords (Free Pack)/Terrain/Resources/Gold/Gold Resource/Gold_Resource.png")
+const FOOD_WORKER_SCENE := preload("res://scenes/character/food_worker.tscn")
+const TREE_RESOURCE_SCENE := preload("res://scenes/resources/tree_resource.tscn")
+const SHEEP_RESOURCE_SCENE := preload("res://scenes/resources/sheep_resource.tscn")
 
 const WORKER_BUILDINGS := {
 	&"worker_wood": {
@@ -41,6 +41,7 @@ const WORKER_HOME_TELEPORT_OFFSET := Vector2(28.0, 14.0)
 const TREE_REPLACEMENT_MIN_RADIUS: float = 120.0
 const TREE_REPLACEMENT_MAX_RADIUS: float = 280.0
 const TREE_REPLACEMENT_RANDOM_ATTEMPTS: int = 56
+const TREE_WARNING_REFRESH_INTERVAL: float = 0.4
 
 @export var starting_wood: int = 0
 @export var starting_food: int = 0
@@ -56,6 +57,11 @@ const TREE_REPLACEMENT_RANDOM_ATTEMPTS: int = 56
 @export var wood_tree_ground_check_radius: float = 22.0
 @export var wood_tree_edge_clearance_radius: float = 34.0
 @export var building_edge_clearance_radius: float = 34.0
+@export var spawn_random_food_sheep: bool = true
+@export_range(1, 200, 1) var random_food_sheep_count: int = 20
+@export var replace_existing_food_sheep: bool = true
+@export var food_sheep_min_spacing: float = 60.0
+@export var food_sheep_jitter: float = 8.0
 
 @onready var player: CharacterBody2D = $CharacterScene
 @onready var ui_manager: CanvasLayer = $UI/UIManager
@@ -63,6 +69,7 @@ const TREE_REPLACEMENT_RANDOM_ATTEMPTS: int = 56
 @onready var top_ground_layer: TileMapLayer = $GroundLayer/TopGround
 @onready var bottom_ground_layer: TileMapLayer = $GroundLayer/BottomGround
 @onready var wood_resources_root: Node2D = get_node_or_null("WoodResources") as Node2D
+@onready var food_resources_root: Node2D = get_node_or_null("FoodResources") as Node2D
 
 var bottom_ground_regions: Dictionary = {}
 
@@ -81,11 +88,14 @@ var pending_upgrade_building: Node2D
 var pending_upgrade_cost: int = 0
 var pending_upgrade_radius_bonus: float = 0.0
 var pending_upgrade_worker_speed_bonus: float = 0.0
+var tree_warning_refresh_accum: float = 0.0
 
 func _ready() -> void:
 	_build_bottom_ground_regions()
 	_spawn_initial_wood_trees()
+	_spawn_initial_food_sheep()
 	_register_existing_tree_resources()
+	_register_existing_sheep_resources()
 
 	resources[&"wood"] = starting_wood
 	resources[&"food"] = starting_food
@@ -96,16 +106,16 @@ func _ready() -> void:
 		ui_manager.call("set_building_quantity", building_id, 0)
 		ui_manager.call("set_building_gold_cost", building_id, WORKER_BUILDINGS[building_id]["gold_cost"])
 
-	ui_manager.call("set_resource_icon", &"wood", WOOD_RESOURCE_ICON)
-	ui_manager.call("set_resource_icon", &"food", FOOD_RESOURCE_ICON)
-	ui_manager.call("set_resource_icon", &"gold", GOLD_RESOURCE_ICON)
 	ui_manager.call("set_resource_amount", &"wood", resources[&"wood"])
 	ui_manager.call("set_resource_amount", &"food", resources[&"food"])
 	ui_manager.call("set_resource_amount", &"gold", resources[&"gold"])
 	ui_manager.building_requested.connect(_on_building_requested)
 	_refresh_building_availability()
+	_refresh_worker_tree_warnings()
 
 func _process(_delta: float) -> void:
+	_update_worker_tree_warnings(_delta)
+
 	if active_preview == null:
 		return
 
@@ -125,6 +135,56 @@ func _process(_delta: float) -> void:
 	if Input.is_action_just_pressed("attack") and can_place and not _is_pointer_over_ui():
 		_confirm_active_preview()
 
+func _update_worker_tree_warnings(delta: float) -> void:
+	tree_warning_refresh_accum += delta
+	if tree_warning_refresh_accum < TREE_WARNING_REFRESH_INTERVAL:
+		return
+	tree_warning_refresh_accum = 0.0
+	_refresh_worker_tree_warnings()
+
+func _refresh_worker_tree_warnings() -> void:
+	for building_variant in get_tree().get_nodes_in_group("worker_building"):
+		var building := building_variant as Node2D
+		if building == null:
+			continue
+
+		var building_id: StringName = building.get("building_id") as StringName
+		if building_id == &"worker_wood":
+			var home_position: Vector2 = building.global_position
+			var harvest_radius: float = float(building.get("harvest_radius"))
+			var has_resource: bool = _has_reachable_resource_for_home(home_position, harvest_radius, "wood_resource")
+			building.call("set_tree_warning_visible", not has_resource)
+		elif building_id == &"worker_meat":
+			var home_position: Vector2 = building.global_position
+			var harvest_radius: float = float(building.get("harvest_radius"))
+			var has_resource: bool = _has_reachable_resource_for_home(home_position, harvest_radius, "food_resource")
+			building.call("set_tree_warning_visible", not has_resource, "No Sheep")
+		else:
+			building.call("set_tree_warning_visible", false)
+
+func _has_reachable_resource_for_home(home_position: Vector2, harvest_radius: float, resource_group: String) -> bool:
+	var worker_region: int = -1
+	if has_method("get_bottom_ground_region_id"):
+		worker_region = get_bottom_ground_region_id(home_position)
+
+	for tree_variant in get_tree().get_nodes_in_group(resource_group):
+		var tree := tree_variant as Node2D
+		if tree == null or not is_instance_valid(tree):
+			continue
+		if tree.has_method("is_depleted") and bool(tree.call("is_depleted")):
+			continue
+		if home_position.distance_to(tree.global_position) > harvest_radius:
+			continue
+
+		if worker_region != -1 and has_method("get_bottom_ground_region_id"):
+			var tree_region: int = get_bottom_ground_region_id(tree.global_position)
+			if tree_region == -1 or tree_region != worker_region:
+				continue
+
+		return true
+
+	return false
+
 func _on_building_requested(building_id: StringName, _gold_cost: int) -> void:
 	if not WORKER_BUILDINGS.has(building_id):
 		return
@@ -141,7 +201,10 @@ func _begin_placement(building_id: StringName) -> void:
 	_set_placement_pause_state(true)
 	ui_manager.call("set_shop_toggle_enabled", false)
 
-	active_preview = WORKER_BUILDING_SCENE.instantiate()
+	if building_id == &"worker_wood":
+		active_preview = WOOD_WORKER_BUILDING_SCENE.instantiate()
+	elif building_id == &"worker_meat":
+		active_preview = FOOD_WORKER_BUILDING_SCENE.instantiate()
 	active_preview.call("configure", _get_building_config(building_id))
 	active_preview.process_mode = Node.PROCESS_MODE_ALWAYS
 	add_child(active_preview)
@@ -187,7 +250,11 @@ func _confirm_active_preview() -> void:
 	_cancel_active_preview()
 	var building_config: Dictionary = _get_building_config(building_id)
 
-	var building: Node2D = WORKER_BUILDING_SCENE.instantiate() as Node2D
+	var building: Node2D
+	if building_id == &"worker_wood":
+		building = WOOD_WORKER_BUILDING_SCENE.instantiate() as Node2D
+	elif building_id == &"worker_meat":
+		building = FOOD_WORKER_BUILDING_SCENE.instantiate() as Node2D
 	building.call("configure", building_config)
 	building.global_position = placement_position
 	building.connect("upgrade_requested", Callable(self, "_on_worker_building_upgrade_requested"))
@@ -329,18 +396,37 @@ func _set_placement_pause_state(is_paused: bool) -> void:
 	Engine.time_scale = 1.0
 
 func _spawn_worker_for_building(building_id: StringName, building: Node2D) -> void:
-	if building_id != &"worker_wood":
-		return
+	if building_id == &"worker_wood":
+		var worker: CharacterBody2D = WOOD_WORKER_SCENE.instantiate() as CharacterBody2D
+		worker.global_position = building.global_position + WORKER_HOME_TELEPORT_OFFSET
+		main_building_root.add_child(worker)
+		worker.call("set_assigned_house_position", building.global_position)
+		worker.call("set_assigned_house", building)
+		var harvest_radius: float = float(building.get("harvest_radius"))
+		worker.call("set_harvest_radius", harvest_radius)
+		worker.connect("wood_collected", Callable(self, "_on_wood_worker_collected"))
+		worker.connect("tree_availability_changed", Callable(self, "_on_worker_tree_availability_changed").bind(building))
+		building.call("set_tree_warning_visible", not bool(worker.call("has_reachable_tree_target")))
+	elif building_id == &"worker_meat":
+		var worker: CharacterBody2D = FOOD_WORKER_SCENE.instantiate() as CharacterBody2D
+		worker.global_position = building.global_position + WORKER_HOME_TELEPORT_OFFSET
+		main_building_root.add_child(worker)
+		worker.call("set_assigned_house_position", building.global_position)
+		worker.call("set_assigned_house", building)
+		var harvest_radius: float = float(building.get("harvest_radius"))
+		worker.call("set_harvest_radius", harvest_radius)
+		worker.connect("food_collected", Callable(self, "_on_food_worker_collected"))
+		worker.connect("tree_availability_changed", Callable(self, "_on_worker_tree_availability_changed").bind(building))
+		building.call("set_tree_warning_visible", not bool(worker.call("has_reachable_tree_target")), "No Sheep")
 
-	var worker: CharacterBody2D = WOOD_WORKER_SCENE.instantiate() as CharacterBody2D
-	worker.global_position = building.global_position + WORKER_HOME_TELEPORT_OFFSET
-	main_building_root.add_child(worker)
-	# Use the building center as the worker home target to avoid edge/cliff oscillation.
-	worker.call("set_assigned_house_position", building.global_position)
-	worker.call("set_assigned_house", building)
-	var harvest_radius: float = float(building.get("harvest_radius"))
-	worker.call("set_harvest_radius", harvest_radius)
-	worker.connect("wood_collected", Callable(self, "_on_wood_worker_collected"))
+func _on_worker_tree_availability_changed(has_reachable_tree: bool, building: Node2D) -> void:
+	if building == null or not is_instance_valid(building):
+		return
+	var b_id: StringName = building.get("building_id") as StringName
+	if b_id == &"worker_meat":
+		building.call("set_tree_warning_visible", not has_reachable_tree, "No Sheep")
+	else:
+		building.call("set_tree_warning_visible", not has_reachable_tree)
 
 func _get_building_config(building_id: StringName) -> Dictionary:
 	return WORKER_BUILDINGS[building_id].duplicate()
@@ -390,11 +476,19 @@ func _get_tree_resource_bodies() -> Array[PhysicsBody2D]:
 		var tree_body := tree_variant as PhysicsBody2D
 		if tree_body != null:
 			bodies.append(tree_body)
+	for tree_variant in get_tree().get_nodes_in_group("food_resource"):
+		var tree_body := tree_variant as PhysicsBody2D
+		if tree_body != null:
+			bodies.append(tree_body)
 	return bodies
 
 func _on_wood_worker_collected(amount: int) -> void:
 	resources[&"wood"] += amount
 	ui_manager.call("set_resource_amount", &"wood", resources[&"wood"])
+
+func _on_food_worker_collected(amount: int) -> void:
+	resources[&"food"] += amount
+	ui_manager.call("set_resource_amount", &"food", resources[&"food"])
 
 func _on_worker_building_upgrade_requested(building: Node2D) -> void:
 	if building == null or not is_instance_valid(building):
@@ -688,10 +782,21 @@ func _register_existing_tree_resources() -> void:
 func _register_tree_resource(tree: Node2D) -> void:
 	if tree == null or not is_instance_valid(tree):
 		return
+	_refresh_enemy_tree_collision_exceptions(tree)
 	if tree.has_signal("depleted"):
 		var callback := Callable(self, "_on_tree_resource_depleted")
 		if not tree.is_connected("depleted", callback):
 			tree.connect("depleted", callback)
+
+func _refresh_enemy_tree_collision_exceptions(tree: Node2D) -> void:
+	var tree_body := tree as PhysicsBody2D
+	if tree_body == null:
+		return
+
+	for enemy_variant in get_tree().get_nodes_in_group("enemies"):
+		var enemy_body := enemy_variant as PhysicsBody2D
+		if enemy_body != null:
+			enemy_body.add_collision_exception_with(tree_body)
 
 func _on_tree_resource_depleted(tree: Node2D) -> void:
 	var depleted_position: Vector2 = tree.global_position if tree != null and is_instance_valid(tree) else Vector2.ZERO
@@ -748,6 +853,109 @@ func _find_valid_tree_spawn_near(origin: Vector2) -> Vector2:
 		fallback_radius += 40.0
 
 	return Vector2.INF
+
+func _spawn_initial_food_sheep() -> void:
+	if not spawn_random_food_sheep:
+		return
+	if bottom_ground_layer == null:
+		return
+
+	if food_resources_root == null:
+		food_resources_root = Node2D.new()
+		food_resources_root.name = "FoodResources"
+		add_child(food_resources_root)
+
+	if replace_existing_food_sheep:
+		for child in food_resources_root.get_children():
+			child.queue_free()
+
+	var candidate_positions: Array[Vector2] = _get_bottom_ground_candidate_positions()
+	if candidate_positions.is_empty():
+		return
+
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+
+	var spawned_positions: Array[Vector2] = []
+	var target_count: int = max(random_food_sheep_count, 0)
+	var attempts_left: int = candidate_positions.size()
+
+	while spawned_positions.size() < target_count and attempts_left > 0 and not candidate_positions.is_empty():
+		attempts_left -= 1
+		var index: int = rng.randi_range(0, candidate_positions.size() - 1)
+		var base_position: Vector2 = candidate_positions[index]
+		candidate_positions.remove_at(index)
+
+		var jittered_position := base_position + Vector2(
+			rng.randf_range(-food_sheep_jitter, food_sheep_jitter),
+			rng.randf_range(-food_sheep_jitter, food_sheep_jitter)
+		)
+		if not _is_valid_bottom_tree_position(jittered_position):
+			continue
+
+		var can_place_here: bool = true
+		for existing_position in spawned_positions:
+			var existing_vec: Vector2 = existing_position
+			if existing_vec.distance_to(jittered_position) < food_sheep_min_spacing:
+				can_place_here = false
+				break
+		if not can_place_here:
+			continue
+
+		var sheep: Node2D = SHEEP_RESOURCE_SCENE.instantiate() as Node2D
+		sheep.global_position = jittered_position
+		food_resources_root.add_child(sheep)
+		_register_sheep_resource(sheep)
+		spawned_positions.append(jittered_position)
+
+func _register_existing_sheep_resources() -> void:
+	for sheep_variant in get_tree().get_nodes_in_group("food_resource"):
+		var sheep_node := sheep_variant as Node2D
+		if sheep_node != null:
+			_register_sheep_resource(sheep_node)
+
+func _register_sheep_resource(sheep: Node2D) -> void:
+	if sheep == null or not is_instance_valid(sheep):
+		return
+	_refresh_enemy_sheep_collision_exceptions(sheep)
+	if sheep.has_signal("depleted"):
+		var callback := Callable(self, "_on_sheep_resource_depleted")
+		if not sheep.is_connected("depleted", callback):
+			sheep.connect("depleted", callback)
+
+func _refresh_enemy_sheep_collision_exceptions(sheep: Node2D) -> void:
+	var sheep_body := sheep as PhysicsBody2D
+	if sheep_body == null:
+		return
+
+	for enemy_variant in get_tree().get_nodes_in_group("enemies"):
+		var enemy_body := enemy_variant as PhysicsBody2D
+		if enemy_body != null:
+			enemy_body.add_collision_exception_with(sheep_body)
+
+func _on_sheep_resource_depleted(sheep: Node2D) -> void:
+	var depleted_position: Vector2 = sheep.global_position if sheep != null and is_instance_valid(sheep) else Vector2.ZERO
+	call_deferred("_spawn_replacement_food_sheep", depleted_position)
+
+func _spawn_replacement_food_sheep(preferred_position: Vector2) -> void:
+	if SHEEP_RESOURCE_SCENE == null:
+		return
+	if food_resources_root == null:
+		food_resources_root = get_node_or_null("FoodResources") as Node2D
+	if food_resources_root == null:
+		food_resources_root = Node2D.new()
+		food_resources_root.name = "FoodResources"
+		add_child(food_resources_root)
+
+	var spawn_position := _find_valid_tree_spawn_near(preferred_position)
+	if spawn_position == Vector2.INF:
+		return
+
+	var new_sheep: Node2D = SHEEP_RESOURCE_SCENE.instantiate() as Node2D
+	new_sheep.global_position = spawn_position
+	food_resources_root.add_child(new_sheep)
+	_register_sheep_resource(new_sheep)
+	call_deferred("_refresh_all_worker_building_collisions")
 
 func _get_bottom_ground_candidate_positions() -> Array[Vector2]:
 	var candidates: Array[Vector2] = []

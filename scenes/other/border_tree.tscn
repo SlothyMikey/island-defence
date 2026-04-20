@@ -70,7 +70,7 @@ animations = [{
 radius = 46.0
 height = 170.0
 
-[node name="TreeBorder" type="StaticBody2D" unique_id=2051282856]
+[node name="TreeBorder" type="StaticBody2D" unique_id=2051282856 groups=["tree_obstacle"]]
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=1158063413]
 sprite_frames = SubResource("SpriteFrames_ws05k")

@@ -1,6 +1,6 @@
 extends CharacterBody2D
 
-signal wood_collected(amount: int)
+signal food_collected(amount: int)
 signal tree_availability_changed(has_reachable_tree: bool)
 
 @export var move_speed: float = 120.0
@@ -33,7 +33,7 @@ var home_building_body: PhysicsBody2D
 var current_tree: Node2D
 var route_points: Array[Vector2] = []
 var current_route_index: int = 0
-var carried_wood: int = 0
+var carried_food: int = 0
 var stuck_time_accum: float = 0.0
 var evade_time_left: float = 0.0
 var evade_direction: Vector2 = Vector2.ZERO
@@ -51,8 +51,8 @@ var state: WorkerState = WorkerState.GOING_TO_TREE
 
 const ANIM_IDLE: StringName = &"idle"
 const ANIM_RUN: StringName = &"run"
-const ANIM_CHOP: StringName = &"axed_animation"
-const ANIM_WOOD_CARRY: StringName = &"wood_carry_animation"
+const ANIM_CHOP: StringName = &"knife_animation"
+const ANIM_MEAT_CARRY: StringName = &"meat_carry_animation"
 
 func _ready() -> void:
 	add_to_group("worker_npc")
@@ -108,7 +108,7 @@ func _on_gather_timer_timeout() -> void:
 
 	var harvested_amount: int = int(current_tree.call("harvest", chop_power))
 	if harvested_amount > 0:
-		carried_wood += harvested_amount
+		carried_food += harvested_amount
 
 	if not _is_tree_valid(current_tree):
 		_enter_returning_home_state()
@@ -121,7 +121,7 @@ func _find_nearest_tree_from(origin_position: Vector2) -> Node2D:
 	var nearest_distance_sq: float = INF
 	var nearest_tree_any_distance: Node2D
 	var nearest_any_distance_sq: float = INF
-	var all_trees: Array = get_tree().get_nodes_in_group("wood_resource")
+	var all_trees: Array = get_tree().get_nodes_in_group("food_resource")
 
 	for tree_variant in all_trees:
 		var tree := tree_variant as Node2D
@@ -150,7 +150,7 @@ func _is_tree_valid(tree_ref: Variant) -> bool:
 	var tree: Node2D = _get_live_tree(tree_ref)
 	if tree == null or not is_instance_valid(tree):
 		return false
-	if not tree.is_in_group("wood_resource"):
+	if not tree.is_in_group("food_resource"):
 		return false
 	if tree.has_method("is_depleted") and bool(tree.call("is_depleted")):
 		return false
@@ -169,7 +169,6 @@ func _process_going_to_tree(delta: float) -> void:
 	if not _is_tree_valid(current_tree) or not _is_tree_reachable(current_tree):
 		current_tree = _find_nearest_tree_from(global_position)
 		_set_tree_availability(current_tree != null)
-		_rebuild_route_to(current_tree.global_position if current_tree != null else home_position)
 
 	if not _is_tree_valid(current_tree) or not _is_tree_reachable(current_tree):
 		velocity = Vector2.ZERO
@@ -177,12 +176,24 @@ func _process_going_to_tree(delta: float) -> void:
 		move_and_slide()
 		return
 
+	if current_tree != null and is_instance_valid(current_tree):
+		_rebuild_route_to(current_tree.global_position)
+
 	_follow_route(delta)
 	if _can_start_chopping(current_tree):
 		state = WorkerState.CHOPPING_TREE
 		_reset_movement_recovery()
 
 func _process_chopping_tree() -> void:
+	if not _is_tree_valid(current_tree):
+		_enter_returning_home_state()
+		return
+
+	if not _can_start_chopping(current_tree):
+		gather_timer.stop()
+		state = WorkerState.GOING_TO_TREE
+		return
+
 	_reset_movement_recovery()
 	velocity = Vector2.ZERO
 	_play_chop()
@@ -190,15 +201,12 @@ func _process_chopping_tree() -> void:
 		gather_timer.start()
 	move_and_slide()
 
-	if not _is_tree_valid(current_tree):
-		_enter_returning_home_state()
-
 func _process_returning_home(delta: float) -> void:
 	_follow_route(delta)
 	if global_position.distance_to(home_position) <= home_reach_distance:
-		if carried_wood > 0:
-			wood_collected.emit(carried_wood)
-			carried_wood = 0
+		if carried_food > 0:
+			food_collected.emit(carried_food)
+			carried_food = 0
 		_start_tree_search_cycle()
 		state = WorkerState.GOING_TO_TREE
 
@@ -513,9 +521,9 @@ func _play_chop() -> void:
 	_play_idle()
 
 func _play_move_animation() -> void:
-	if state == WorkerState.RETURNING_HOME and carried_wood > 0 and _has_animation(ANIM_WOOD_CARRY):
-		if sprite.animation != ANIM_WOOD_CARRY:
-			sprite.play(ANIM_WOOD_CARRY)
+	if state == WorkerState.RETURNING_HOME and carried_food > 0 and _has_animation(ANIM_MEAT_CARRY):
+		if sprite.animation != ANIM_MEAT_CARRY:
+			sprite.play(ANIM_MEAT_CARRY)
 		return
 	_play_run()
 

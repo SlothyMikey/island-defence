@@ -1,0 +1,158 @@
+[gd_scene format=3 uid="uid://cca5trx176oe"]
+
+[ext_resource type="Script" uid="uid://bk5i3ngsy35y2" path="res://script/character/food_worker.gd" id="1_0p7tv"]
+[ext_resource type="Texture2D" uid="uid://b2olij4yhj4va" path="res://assets/Tiny Swords (Free Pack)/Units/Red Units/Pawn/Pawn_Interact Knife.png" id="2_lvxmu"]
+[ext_resource type="Texture2D" uid="uid://c8fwkdipkrlki" path="res://assets/Tiny Swords (Free Pack)/Units/Red Units/Pawn/Pawn_Run Knife.png" id="4_igjc8"]
+[ext_resource type="Texture2D" uid="uid://bm00ym75x8v8a" path="res://assets/Tiny Swords (Free Pack)/Units/Red Units/Pawn/Pawn_Run Meat.png" id="5_p17s6"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_s8fh7"]
+atlas = ExtResource("2_lvxmu")
+region = Rect2(0, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_h4xmn"]
+atlas = ExtResource("2_lvxmu")
+region = Rect2(192, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_7v5eq"]
+atlas = ExtResource("2_lvxmu")
+region = Rect2(384, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_mkb8k"]
+atlas = ExtResource("2_lvxmu")
+region = Rect2(576, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_mvlka"]
+atlas = ExtResource("5_p17s6")
+region = Rect2(0, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_10bad"]
+atlas = ExtResource("5_p17s6")
+region = Rect2(192, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_jjdeh"]
+atlas = ExtResource("5_p17s6")
+region = Rect2(384, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_q6m3n"]
+atlas = ExtResource("5_p17s6")
+region = Rect2(576, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hi1xp"]
+atlas = ExtResource("5_p17s6")
+region = Rect2(768, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_7wp8v"]
+atlas = ExtResource("5_p17s6")
+region = Rect2(960, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_iyy51"]
+atlas = ExtResource("4_igjc8")
+region = Rect2(0, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_gy5nk"]
+atlas = ExtResource("4_igjc8")
+region = Rect2(192, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_wjk2c"]
+atlas = ExtResource("4_igjc8")
+region = Rect2(384, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_qjgvj"]
+atlas = ExtResource("4_igjc8")
+region = Rect2(576, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_w3ufp"]
+atlas = ExtResource("4_igjc8")
+region = Rect2(768, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_0xxf3"]
+atlas = ExtResource("4_igjc8")
+region = Rect2(960, 0, 192, 192)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_083jg"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_s8fh7")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_h4xmn")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_7v5eq")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_mkb8k")
+}],
+"loop": true,
+"name": &"knife_animation",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_mvlka")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_10bad")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_jjdeh")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_q6m3n")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_hi1xp")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_7wp8v")
+}],
+"loop": true,
+"name": &"meat_carry_animation",
+"speed": 10.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_iyy51")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_gy5nk")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_wjk2c")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_qjgvj")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_w3ufp")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_0xxf3")
+}],
+"loop": true,
+"name": &"run",
+"speed": 10.0
+}]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_0p7tv"]
+radius = 26.019224
+
+[node name="FoodWorker" type="CharacterBody2D" unique_id=1072692810]
+collision_layer = 4
+script = ExtResource("1_0p7tv")
+
+[node name="Sprite2D" type="AnimatedSprite2D" parent="." unique_id=979353512]
+position = Vector2(0, -12)
+scale = Vector2(0.9, 0.9)
+sprite_frames = SubResource("SpriteFrames_083jg")
+animation = &"run"
+autoplay = "run"
+frame_progress = 0.95424765
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=252952472]
+position = Vector2(0, -10)
+shape = SubResource("CircleShape2D_0p7tv")
+
+[node name="GatherTimer" type="Timer" parent="." unique_id=210622080]
+wait_time = 2.0

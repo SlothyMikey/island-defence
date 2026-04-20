@@ -1,6 +1,6 @@
-[gd_scene format=3 uid="uid://c0bus08o35ty1"]
+[gd_scene format=3 uid="uid://bwa8c80y13tvk"]
 
-[ext_resource type="Script" uid="uid://3e2f2nsfx1x0" path="res://script/buildings/worker_building.gd" id="1_h50d4"]
+[ext_resource type="Script" path="res://script/buildings/worker_building.gd" id="1_h50d4"]
 [ext_resource type="Texture2D" uid="uid://dpah2e1vbtcaa" path="res://assets/Tiny Swords (Free Pack)/Buildings/Blue Buildings/House1.png" id="2_h50d4"]
 [ext_resource type="Texture2D" uid="uid://d1k5yisbc7tk" path="res://assets/Tiny Swords (Update 010)/UI/Pointers/03.png" id="3_h50d4"]
 [ext_resource type="Texture2D" uid="uid://caixn87qfjal1" path="res://assets/Tiny Swords (Update 010)/UI/Pointers/04.png" id="4_h50d4"]
@@ -20,6 +20,7 @@
 [ext_resource type="Texture2D" uid="uid://b3m7jqjl5mvat" path="res://assets/Tiny Swords (Update 010)/UI/Buttons/Button_Disable_3Slides.png" id="18_0ixfl"]
 [ext_resource type="FontFile" uid="uid://bomi0ms3yvf3h" path="res://assets/Fonts/OpenType (.otf)/PixeloidSans.otf" id="19_font_regular"]
 [ext_resource type="FontFile" uid="uid://1atiu5qkqe3r" path="res://assets/Fonts/OpenType (.otf)/PixeloidSans-Bold.otf" id="20_font_bold"]
+[ext_resource type="Texture2D" uid="uid://cxlnyjh1a6qst" path="res://assets/Tiny Swords (Update 010)/UI/Ribbons/Ribbon_Red_3Slides.png" id="21_warn_ribbon"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_h8wcc"]
 radius = 52.5
@@ -69,6 +70,38 @@ texture = ExtResource("5_h50d4")
 position = Vector2(53, 58)
 texture = ExtResource("6_h8wcc")
 
+[node name="StatusNotification" type="Node2D" parent="." unique_id=1906712350]
+visible = false
+modulate = Color(1, 1, 1, 0.7)
+z_index = 12
+position = Vector2(0, -108)
+
+[node name="Banner" type="Sprite2D" parent="StatusNotification" unique_id=1822738099]
+position = Vector2(-4.7683716e-06, -4.500003)
+scale = Vector2(0.96875, 0.7343751)
+texture = ExtResource("21_warn_ribbon")
+
+[node name="Label" type="Label" parent="StatusNotification" unique_id=149800261]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -52.0
+offset_top = -23.0
+offset_right = 54.0
+offset_bottom = -1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.32549, 0.121569, 0.101961, 1)
+theme_override_colors/font_outline_color = Color(0.996078, 0.905882, 0.72549, 0.92)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("20_font_bold")
+theme_override_font_sizes/font_size = 16
+text = "No Trees"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="ActionUI" type="Control" parent="." unique_id=1007720719]
 z_index = 10
 layout_mode = 3
@@ -80,6 +113,7 @@ offset_bottom = 132.0
 mouse_filter = 1
 
 [node name="ActionPanel" type="Panel" parent="ActionUI" unique_id=768552866]
+visible = false
 layout_mode = 0
 offset_right = 208.0
 offset_bottom = 68.0
@@ -121,6 +155,7 @@ expand_icon = true
 layer = 20
 
 [node name="UpgradeRoot" type="Control" parent="UpgradeOverlay" unique_id=2088382459]
+visible = false
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -156,10 +191,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -280.0
-offset_top = -170.0
-offset_right = 280.0
-offset_bottom = 223.0
+offset_left = -284.0
+offset_top = -191.0
+offset_right = 276.0
+offset_bottom = 202.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 1

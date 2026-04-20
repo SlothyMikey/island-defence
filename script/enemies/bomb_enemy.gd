@@ -7,6 +7,7 @@ extends CharacterBody2D
 @export var waypoint_reached_distance: float = 24.0
 @export var stun_duration: float = 0.25 
 @export var explosion_damage: int = 20 
+@export var gold_drop_amount: int = 15 
 @export var stuck_progress_epsilon: float = 0.9
 @export var stuck_repath_delay: float = 0.4
 @export var evade_duration: float = 0.25
@@ -35,12 +36,24 @@ var evade_direction: Vector2 = Vector2.ZERO
 func _ready() -> void:
 	current_health = max_health
 	target = get_tree().get_first_node_in_group("base")
+	_ignore_resource_collisions()
 	
 	if target == null:
 		print("ERROR: I spawned, but I cannot find anything in the 'base' group!")
 		return
 
 	call_deferred("_build_route")
+
+func _ignore_resource_collisions() -> void:
+	for tree_variant in get_tree().get_nodes_in_group("tree_obstacle"):
+		var tree_body := tree_variant as PhysicsBody2D
+		if tree_body != null:
+			add_collision_exception_with(tree_body)
+			
+	for sheep_variant in get_tree().get_nodes_in_group("food_resource"):
+		var sheep_body := sheep_variant as PhysicsBody2D
+		if sheep_body != null:
+			add_collision_exception_with(sheep_body)
 
 func _build_route() -> void:
 	if target == null:
@@ -144,6 +157,18 @@ func take_damage(amount: int) -> void:
 		text_instance.set_damage_value(amount)
 	
 	if current_health <= 0:
+		is_detonating = true # Stop movement and prevent double damage
+		
+		# Give player gold
+		var world := get_tree().current_scene
+		if world != null and "resources" in world:
+			world.resources[&"gold"] += gold_drop_amount
+			if "ui_manager" in world and world.ui_manager != null:
+				world.ui_manager.call("set_resource_amount", &"gold", world.resources[&"gold"])
+		
+		# Play death animation before freeing
+		animated_sprite.play("death")
+		await animated_sprite.animation_finished
 		die()
 
 func detonate() -> void:

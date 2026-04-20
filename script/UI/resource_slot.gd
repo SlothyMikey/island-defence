@@ -36,3 +36,8 @@ func _update_ui() -> void:
 
 	icon_rect.texture = icon
 	amount_label.text = str(amount)
+	
+	if resource_id == &"gold":
+		icon_rect.custom_minimum_size = Vector2(40, 40)
+	else:
+		icon_rect.custom_minimum_size = Vector2(52, 52)

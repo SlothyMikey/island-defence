@@ -1,6 +1,6 @@
 extends Panel
 
-@export var slot_scene: PackedScene = preload("res://scenes/building/resource_slot.tscn")
+@export var slot_scene: PackedScene = preload("res://scenes/UI/resource_slot.tscn")
 
 @onready var slots_row: HBoxContainer = $Padding/SlotsRow
 

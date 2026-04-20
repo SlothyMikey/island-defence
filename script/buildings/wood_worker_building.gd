@@ -25,6 +25,8 @@ signal sell_requested(building: Node2D)
 		upgrade_level = maxi(value, 0)
 
 @onready var sprite: Sprite2D = $Sprite2D
+@onready var status_notification: Node2D = $StatusNotification
+@onready var status_notification_label: Label = $StatusNotification/Label
 @onready var collision_shape: CollisionShape2D = $StaticBody2D/CollisionShape2D
 @onready var building_body: StaticBody2D = $StaticBody2D
 @onready var placement_markers: Node2D = $PlacementMarkers
@@ -40,6 +42,7 @@ signal sell_requested(building: Node2D)
 @onready var upgrade_overlay_root: Control = $UpgradeOverlay/UpgradeRoot
 @onready var upgrade_popup: NinePatchRect = $UpgradeOverlay/UpgradeRoot/UpgradeCenter/UpgradePanel
 @onready var upgrade_title_label: Label = $UpgradeOverlay/UpgradeRoot/UpgradeCenter/UpgradePanel/UpgradeContent/LevelLabel
+@onready var upgrade_building_name_label: Label = $UpgradeOverlay/UpgradeRoot/UpgradeCenter/UpgradePanel/UpgradeContent/LevelLabel2
 @onready var upgrade_building_icon: TextureRect = $UpgradeOverlay/UpgradeRoot/UpgradeCenter/UpgradePanel/UpgradeContent/BuildingIcon
 @onready var upgrade_cost_label: Label = $UpgradeOverlay/UpgradeRoot/UpgradeCenter/UpgradePanel/UpgradeContent/CostRow/CostLabel
 @onready var upgrade_info_label: RichTextLabel = $UpgradeOverlay/UpgradeRoot/UpgradeCenter/UpgradePanel/UpgradeContent/DetailsPanel/DetailsLabel
@@ -66,6 +69,8 @@ var is_preview_mode := false
 var is_placement_valid := true
 var marker_tween: Tween
 var is_selected := false
+var is_tree_warning_visible: bool = false
+var tree_warning_message: String = "No Trees"
 var upgrade_button_label_default_pos: Vector2
 var close_button_icon_default_pos: Vector2
 
@@ -74,6 +79,8 @@ func _ready() -> void:
 	upgrade_button_label_default_pos = upgrade_button_label.position
 	close_button_icon_default_pos = close_button_icon.position
 	_update_visuals()
+	_update_upgrade_header()
+	set_tree_warning_visible(false)
 	_update_markers_from_collision_shape()
 	_setup_action_ui()
 	set_preview_mode(is_preview_mode)
@@ -86,6 +93,33 @@ func configure(config: Dictionary) -> void:
 	sprite_offset = config.get("sprite_offset", sprite_offset)
 	harvest_radius = float(config.get("harvest_radius", harvest_radius))
 	upgrade_level = int(config.get("upgrade_level", upgrade_level))
+	_update_upgrade_header()
+
+func _update_upgrade_header() -> void:
+	if not is_node_ready():
+		return
+	if upgrade_building_name_label == null:
+		return
+	upgrade_building_name_label.text = _get_upgrade_building_name()
+
+func _get_upgrade_building_name() -> String:
+	var name_text := building_name.strip_edges()
+	if name_text == "":
+		return "Worker Building"
+	return name_text
+
+func set_tree_warning_visible(is_visible: bool, message: String = "No Trees") -> void:
+	is_tree_warning_visible = is_visible
+	tree_warning_message = message
+	_apply_tree_warning_visual()
+
+func _apply_tree_warning_visual() -> void:
+	if not is_node_ready():
+		return
+	if status_notification == null or status_notification_label == null:
+		return
+	status_notification.visible = is_tree_warning_visible and not is_preview_mode
+	status_notification_label.text = tree_warning_message
 
 func set_preview_mode(value: bool) -> void:
 	is_preview_mode = value
@@ -98,6 +132,7 @@ func set_preview_mode(value: bool) -> void:
 	action_ui.visible = false
 	_hide_upgrade_popup()
 	collision_shape.disabled = value
+	_apply_tree_warning_visual()
 	if value:
 		_start_marker_animation()
 	else:
@@ -283,6 +318,7 @@ func show_upgrade_popup(title_text: String, cost_text: String, details_text: Str
 	upgrade_overlay_root.visible = true
 	upgrade_popup.visible = true
 	upgrade_title_label.text = title_text
+	upgrade_building_name_label.text = _get_upgrade_building_name()
 	upgrade_building_icon.texture = building_texture
 	upgrade_cost_label.text = cost_text
 	upgrade_info_label.text = details_text

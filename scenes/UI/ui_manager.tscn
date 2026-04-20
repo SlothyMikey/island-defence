@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://cufqle00g0ybo" path="res://script/UI/ui_manager.gd" id="1_k06ii"]
 [ext_resource type="Texture2D" uid="uid://dq8wwd7p1d3xf" path="res://assets/Tiny Swords (Update 010)/UI/Buttons/Button_Blue.png" id="1_ljiw2"]
-[ext_resource type="PackedScene" uid="uid://bfw7dlxbgf4di" path="res://scenes/building/building_shop_card.tscn" id="2_nuf8g"]
+[ext_resource type="PackedScene" uid="uid://bfw7dlxbgf4di" path="res://scenes/UI/building_shop_card.tscn" id="2_nuf8g"]
 [ext_resource type="Texture2D" uid="uid://dmc1efvif0aq0" path="res://assets/Tiny Swords (Free Pack)/UI Elements/UI Elements/Wood Table/WoodTableFix.png" id="2_q84nj"]
 [ext_resource type="Texture2D" uid="uid://bbp5n72x06hou" path="res://assets/Tiny Swords (Update 010)/UI/Buttons/Button_Blue_Pressed.png" id="2_ruk2a"]
 [ext_resource type="Texture2D" uid="uid://f113pspiopeu" path="res://assets/Tiny Swords (Update 010)/UI/Buttons/Button_Hover.png" id="3_k06ii"]
@@ -11,7 +11,7 @@
 [ext_resource type="Texture2D" uid="uid://drvp43e5rpftc" path="res://assets/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_01.png" id="7_q84nj"]
 [ext_resource type="Texture2D" uid="uid://djsblnvr0ynek" path="res://assets/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_05.png" id="8_70s10"]
 [ext_resource type="Texture2D" uid="uid://b03sy5ism7s2w" path="res://assets/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_06.png" id="9_njruv"]
-[ext_resource type="PackedScene" uid="uid://b8nqj52cqfso4" path="res://scenes/building/resource_holder_panel.tscn" id="10_gdt6a"]
+[ext_resource type="PackedScene" uid="uid://b8nqj52cqfso4" path="res://scenes/UI/resource_holder_panel.tscn" id="10_gdt6a"]
 [ext_resource type="Texture2D" uid="uid://dpah2e1vbtcaa" path="res://assets/Tiny Swords (Free Pack)/Buildings/Blue Buildings/House1.png" id="11_req8l"]
 [ext_resource type="Texture2D" uid="uid://cgjti7x5xndia" path="res://assets/Tiny Swords (Free Pack)/Buildings/Red Buildings/House1.png" id="12_i336x"]
 [ext_resource type="Texture2D" uid="uid://v3xbhf7nqwoc" path="res://assets/Tiny Swords (Free Pack)/Buildings/Yellow Buildings/House1.png" id="13_gv132"]

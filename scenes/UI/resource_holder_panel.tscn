@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://b8nqj52cqfso4"]
 
 [ext_resource type="Script" uid="uid://tuo52dbelfxe" path="res://script/UI/resource_holder_panel.gd" id="1_4qofc"]
-[ext_resource type="PackedScene" uid="uid://clea2k0b7wmiv" path="res://scenes/building/resource_slot.tscn" id="2_dfjdh"]
+[ext_resource type="PackedScene" uid="uid://clea2k0b7wmiv" path="res://scenes/UI/resource_slot.tscn" id="2_dfjdh"]
+[ext_resource type="Texture2D" uid="uid://o0c8n7t7tc1g" path="res://assets/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_03.png" id="4_4muk4"]
 [ext_resource type="Texture2D" uid="uid://ckeu28rsdx7k0" path="res://assets/Tiny Swords (Free Pack)/Terrain/Resources/Meat/Meat Resource/Meat Resource.png" id="4_74tnu"]
-[ext_resource type="Texture2D" uid="uid://dsaqjuqdysl2a" path="res://assets/Tiny Swords (Free Pack)/Terrain/Resources/Gold/Gold Resource/Gold_Resource.png" id="5_xjo2h"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_6hwq1"]
 
@@ -36,4 +36,4 @@ icon = ExtResource("4_74tnu")
 [node name="Gold" parent="Padding/SlotsRow" unique_id=1010194682 instance=ExtResource("2_dfjdh")]
 layout_mode = 2
 resource_id = &"gold"
-icon = ExtResource("5_xjo2h")
+icon = ExtResource("4_4muk4")
