@@ -35,9 +35,22 @@ func _update_ui() -> void:
 		return
 
 	icon_rect.texture = icon
-	amount_label.text = str(amount)
+	amount_label.text = _format_amount(amount)
 	
 	if resource_id == &"gold":
 		icon_rect.custom_minimum_size = Vector2(40, 40)
 	else:
 		icon_rect.custom_minimum_size = Vector2(52, 52)
+
+func _format_amount(val: int) -> String:
+	if val < 1000:
+		return str(val)
+	
+	# Round to 1 decimal place (e.g., 1.1)
+	var k_val: float = snapped(val / 1000.0, 0.1)
+	
+	# If it's a whole number, don't show the .0 (e.g., 1k instead of 1.0k)
+	if k_val == floor(k_val):
+		return str(int(k_val)) + "k"
+	
+	return str(k_val) + "k"

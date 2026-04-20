@@ -12,6 +12,8 @@ signal building_requested(building_id: StringName, gold_cost: int)
 @onready var defense_icon: TextureRect = $ShopPanel/Table/DefenseBuildings/Icon
 @onready var resource_holder_panel: Control = $ResourceHolderPanel
 
+@onready var base_health_bar: TextureProgressBar = $TopCenterContainer/BaseHealthBar/HealthProgress
+
 @onready var worker_panel: Control = $ShopPanel/Table/CategoryPanels/WorkerPanel
 @onready var offense_panel: Control = $ShopPanel/Table/CategoryPanels/OffensePanel
 @onready var defense_panel: Control = $ShopPanel/Table/CategoryPanels/DefensePanel
@@ -138,6 +140,11 @@ func set_building_gold_cost(building_id: StringName, gold_cost: int) -> void:
 	var card = building_cards.get(building_id)
 	if card != null:
 		card.set("gold_cost", gold_cost)
+
+func set_base_health(current_health: int, max_health: int) -> void:
+	if base_health_bar != null:
+		base_health_bar.max_value = max_health
+		base_health_bar.value = current_health
 
 func set_shop_toggle_enabled(value: bool) -> void:
 	shop_toggle_button.disabled = not value

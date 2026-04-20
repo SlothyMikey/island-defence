@@ -6,8 +6,8 @@ signal upgrade_canceled(building: Node2D)
 signal move_requested(building: Node2D)
 signal sell_requested(building: Node2D)
 
-@export var building_id: StringName = &"worker_wood"
-@export var building_name: String = "Worker Building"
+@export var building_id: StringName = &"worker_gold"
+@export var building_name: String = "Miner Building"
 @export var building_texture: Texture2D:
 	set(value):
 		building_texture = value
@@ -58,19 +58,19 @@ const INVALID_MARKER_COLOR := Color(1.0, 0.38, 0.38, 1.0)
 const PREVIEW_SPRITE_COLOR := Color(1.0, 1.0, 1.0, 0.72)
 const INVALID_PREVIEW_SPRITE_COLOR := Color(1.0, 0.82, 0.82, 0.72)
 const PLACED_SPRITE_COLOR := Color(1.0, 1.0, 1.0, 1.0)
-const RANGE_FILL_COLOR := Color(0.28, 0.95, 0.62, 0.08)
-const RANGE_OUTLINE_COLOR := Color(0.35, 1.0, 0.68, 0.45)
+const RANGE_FILL_COLOR := Color(0.95, 0.80, 0.15, 0.08)
+const RANGE_OUTLINE_COLOR := Color(1.0, 0.85, 0.20, 0.45)
 const RANGE_OUTLINE_COLOR_INVALID := Color(1.0, 0.4, 0.4, 0.45)
-const SELECTED_RANGE_FILL_COLOR := Color(0.36, 0.86, 1.0, 0.08)
-const SELECTED_RANGE_OUTLINE_COLOR := Color(0.50, 0.90, 1.0, 0.5)
+const SELECTED_RANGE_FILL_COLOR := Color(1.0, 0.85, 0.20, 0.08)
+const SELECTED_RANGE_OUTLINE_COLOR := Color(1.0, 0.90, 0.30, 0.5)
 const BUTTON_PRESS_OFFSET_Y := 2.0
 
 var is_preview_mode := false
 var is_placement_valid := true
 var marker_tween: Tween
 var is_selected := false
-var is_tree_warning_visible: bool = false
-var tree_warning_message: String = "No Trees"
+var is_resource_warning_visible: bool = false
+var resource_warning_message: String = "No Gold"
 var upgrade_button_label_default_pos: Vector2
 var close_button_icon_default_pos: Vector2
 
@@ -80,7 +80,7 @@ func _ready() -> void:
 	close_button_icon_default_pos = close_button_icon.position
 	_update_visuals()
 	_update_upgrade_header()
-	set_tree_warning_visible(false)
+	set_resource_warning_visible(false)
 	_update_markers_from_collision_shape()
 	_setup_action_ui()
 	set_preview_mode(is_preview_mode)
@@ -105,21 +105,25 @@ func _update_upgrade_header() -> void:
 func _get_upgrade_building_name() -> String:
 	var name_text := building_name.strip_edges()
 	if name_text == "":
-		return "Worker Building"
+		return "Miner Building"
 	return name_text
 
-func set_tree_warning_visible(p_visible: bool, message: String = "No Trees") -> void:
-	is_tree_warning_visible = p_visible
-	tree_warning_message = message
-	_apply_tree_warning_visual()
+func set_resource_warning_visible(p_visible: bool, message: String = "No Gold") -> void:
+	is_resource_warning_visible = p_visible
+	resource_warning_message = message
+	_apply_resource_warning_visual()
 
-func _apply_tree_warning_visual() -> void:
+# Keep old name for compatibility with generic worker_building callers.
+func set_tree_warning_visible(p_visible: bool, message: String = "No Gold") -> void:
+	set_resource_warning_visible(p_visible, message)
+
+func _apply_resource_warning_visual() -> void:
 	if not is_node_ready():
 		return
 	if status_notification == null or status_notification_label == null:
 		return
-	status_notification.visible = is_tree_warning_visible and not is_preview_mode
-	status_notification_label.text = tree_warning_message
+	status_notification.visible = is_resource_warning_visible and not is_preview_mode
+	status_notification_label.text = resource_warning_message
 
 func set_preview_mode(value: bool) -> void:
 	is_preview_mode = value
@@ -132,7 +136,7 @@ func set_preview_mode(value: bool) -> void:
 	action_ui.visible = false
 	_hide_upgrade_popup()
 	collision_shape.disabled = value
-	_apply_tree_warning_visual()
+	_apply_resource_warning_visual()
 	if value:
 		_start_marker_animation()
 	else:

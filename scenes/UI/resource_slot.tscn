@@ -4,6 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://c14kc8ubci68e" path="res://assets/Tiny Swords (Free Pack)/UI Elements/UI Elements/Bars/BigBarBaseFix.png" id="2_wow7m"]
 [ext_resource type="Texture2D" uid="uid://bx6g65vy6ebph" path="res://assets/Tiny Swords (Free Pack)/UI Elements/UI Elements/Buttons/TinyRoundBlueButton.png" id="3_2q4r6"]
 [ext_resource type="Texture2D" uid="uid://dgplsyo5dmb5c" path="res://assets/Tiny Swords (Free Pack)/Terrain/Resources/Wood/Wood Resource/Wood Resource.png" id="4_jf5y0"]
+[ext_resource type="FontFile" uid="uid://b3cg5k2w3wvnb" path="res://assets/Fonts/TrueType (.ttf)/PixeloidSans-Bold.ttf" id="5_pixeloid"]
 
 [node name="ResourceSlot" type="Control" unique_id=2041438159]
 custom_minimum_size = Vector2(124, 52)
@@ -14,6 +15,7 @@ script = ExtResource("1_sqp65")
 icon = ExtResource("4_jf5y0")
 
 [node name="Bar" type="TextureRect" parent="." unique_id=2116750503]
+modulate = Color(1.8, 1.65, 1.4, 1)
 layout_mode = 0
 offset_left = 30.0
 offset_top = 5.0
@@ -52,10 +54,14 @@ stretch_mode = 5
 
 [node name="AmountLabel" type="Label" parent="." unique_id=1614069604]
 layout_mode = 0
-offset_left = 58.0
-offset_top = 14.0
-offset_right = 108.0
-offset_bottom = 34.0
+offset_left = 55.0
+offset_top = 12.0
+offset_right = 114.0
+offset_bottom = 40.0
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_pixeloid")
+theme_override_font_sizes/font_size = 14
 text = "0"
 horizontal_alignment = 1
 vertical_alignment = 1

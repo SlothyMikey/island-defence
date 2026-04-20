@@ -1,0 +1,171 @@
+[gd_scene format=3 uid="uid://gold_worker_scene"]
+
+[ext_resource type="Script" path="res://script/character/gold_worker.gd" id="1_gold"]
+[ext_resource type="Texture2D" path="res://assets/Tiny Swords (Free Pack)/Units/Yellow Units/Pawn/Pawn_Interact Pickaxe.png" id="2_interactpickaxe"]
+[ext_resource type="Texture2D" path="res://assets/Tiny Swords (Free Pack)/Units/Yellow Units/Pawn/Pawn_Run Pickaxe.png" id="3_runpickaxe"]
+[ext_resource type="Texture2D" path="res://assets/Tiny Swords (Free Pack)/Units/Yellow Units/Pawn/Pawn_Run Gold.png" id="4_rungold"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_mine0"]
+atlas = ExtResource("2_interactpickaxe")
+region = Rect2(0, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_mine1"]
+atlas = ExtResource("2_interactpickaxe")
+region = Rect2(192, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_mine2"]
+atlas = ExtResource("2_interactpickaxe")
+region = Rect2(384, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_mine3"]
+atlas = ExtResource("2_interactpickaxe")
+region = Rect2(576, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_mine4"]
+atlas = ExtResource("2_interactpickaxe")
+region = Rect2(768, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_mine5"]
+atlas = ExtResource("2_interactpickaxe")
+region = Rect2(960, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_run0"]
+atlas = ExtResource("3_runpickaxe")
+region = Rect2(0, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_run1"]
+atlas = ExtResource("3_runpickaxe")
+region = Rect2(192, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_run2"]
+atlas = ExtResource("3_runpickaxe")
+region = Rect2(384, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_run3"]
+atlas = ExtResource("3_runpickaxe")
+region = Rect2(576, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_run4"]
+atlas = ExtResource("3_runpickaxe")
+region = Rect2(768, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_run5"]
+atlas = ExtResource("3_runpickaxe")
+region = Rect2(960, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_gold0"]
+atlas = ExtResource("4_rungold")
+region = Rect2(0, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_gold1"]
+atlas = ExtResource("4_rungold")
+region = Rect2(192, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_gold2"]
+atlas = ExtResource("4_rungold")
+region = Rect2(384, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_gold3"]
+atlas = ExtResource("4_rungold")
+region = Rect2(576, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_gold4"]
+atlas = ExtResource("4_rungold")
+region = Rect2(768, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_gold5"]
+atlas = ExtResource("4_rungold")
+region = Rect2(960, 0, 192, 192)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_gold"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_gold0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_gold1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_gold2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_gold3")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_gold4")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_gold5")
+}],
+"loop": true,
+"name": &"gold_carry_animation",
+"speed": 10.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_mine0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_mine1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_mine2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_mine3")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_mine4")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_mine5")
+}],
+"loop": true,
+"name": &"mine_animation",
+"speed": 10.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_run0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_run1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_run2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_run3")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_run4")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_run5")
+}],
+"loop": true,
+"name": &"run",
+"speed": 10.0
+}]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_gold"]
+radius = 26.019224
+
+[node name="GoldWorker" type="CharacterBody2D"]
+collision_layer = 4
+script = ExtResource("1_gold")
+
+[node name="Sprite2D" type="AnimatedSprite2D" parent="."]
+position = Vector2(0, -12)
+scale = Vector2(0.9, 0.9)
+sprite_frames = SubResource("SpriteFrames_gold")
+animation = &"run"
+autoplay = "run"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -10)
+shape = SubResource("CircleShape2D_gold")
+
+[node name="GatherTimer" type="Timer" parent="."]
+wait_time = 2.0

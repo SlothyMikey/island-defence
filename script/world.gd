@@ -2,10 +2,13 @@ extends Node2D
 
 const WOOD_WORKER_BUILDING_SCENE := preload("res://scenes/buildings/wood_worker_building.tscn")
 const FOOD_WORKER_BUILDING_SCENE := preload("res://scenes/buildings/food_worker_building.tscn")
+const MINER_WORKER_BUILDING_SCENE := preload("res://scenes/buildings/miner_worker_building.tscn")
 const WOOD_WORKER_SCENE := preload("res://scenes/character/wood_worker.tscn")
 const FOOD_WORKER_SCENE := preload("res://scenes/character/food_worker.tscn")
+const GOLD_WORKER_SCENE := preload("res://scenes/character/gold_worker.tscn")
 const TREE_RESOURCE_SCENE := preload("res://scenes/resources/tree_resource.tscn")
 const SHEEP_RESOURCE_SCENE := preload("res://scenes/resources/sheep_resource.tscn")
+const GOLD_RESOURCE_SCENE := preload("res://scenes/resources/gold_resource.tscn")
 
 const WORKER_BUILDINGS := {
 	&"worker_wood": {
@@ -42,6 +45,7 @@ const TREE_REPLACEMENT_MIN_RADIUS: float = 120.0
 const TREE_REPLACEMENT_MAX_RADIUS: float = 280.0
 const TREE_REPLACEMENT_RANDOM_ATTEMPTS: int = 56
 const TREE_WARNING_REFRESH_INTERVAL: float = 0.4
+const RESOURCE_BORDER_CLEARANCE: float = 120.0
 
 @export var starting_wood: int = 0
 @export var starting_food: int = 0
@@ -62,6 +66,11 @@ const TREE_WARNING_REFRESH_INTERVAL: float = 0.4
 @export var replace_existing_food_sheep: bool = true
 @export var food_sheep_min_spacing: float = 60.0
 @export var food_sheep_jitter: float = 8.0
+@export var spawn_random_gold_stones: bool = true
+@export_range(1, 200, 1) var random_gold_stone_count: int = 20
+@export var replace_existing_gold_stones: bool = true
+@export var gold_stone_min_spacing: float = 70.0
+@export var gold_stone_jitter: float = 6.0
 
 @onready var player: CharacterBody2D = $CharacterScene
 @onready var ui_manager: CanvasLayer = $UI/UIManager
@@ -70,6 +79,7 @@ const TREE_WARNING_REFRESH_INTERVAL: float = 0.4
 @onready var bottom_ground_layer: TileMapLayer = $GroundLayer/BottomGround
 @onready var wood_resources_root: Node2D = get_node_or_null("WoodResources") as Node2D
 @onready var food_resources_root: Node2D = get_node_or_null("FoodResources") as Node2D
+@onready var gold_resources_root: Node2D = get_node_or_null("GoldResources") as Node2D
 
 var bottom_ground_regions: Dictionary = {}
 
@@ -90,12 +100,23 @@ var pending_upgrade_radius_bonus: float = 0.0
 var pending_upgrade_worker_speed_bonus: float = 0.0
 var tree_warning_refresh_accum: float = 0.0
 
+# Weighted tier table for gold stone spawning.
+# Smaller stones are more common, bigger ones are rarer.
+const GOLD_STONE_TIER_WEIGHTS := {
+	3: 40,
+	4: 30,
+	5: 20,
+	6: 10,
+}
+
 func _ready() -> void:
 	_build_bottom_ground_regions()
 	_spawn_initial_wood_trees()
 	_spawn_initial_food_sheep()
+	_spawn_initial_gold_stones()
 	_register_existing_tree_resources()
 	_register_existing_sheep_resources()
+	_register_existing_gold_resources()
 
 	resources[&"wood"] = starting_wood
 	resources[&"food"] = starting_food
@@ -159,6 +180,11 @@ func _refresh_worker_tree_warnings() -> void:
 			var harvest_radius: float = float(building.get("harvest_radius"))
 			var has_resource: bool = _has_reachable_resource_for_home(home_position, harvest_radius, "food_resource")
 			building.call("set_tree_warning_visible", not has_resource, "No Sheep")
+		elif building_id == &"worker_gold":
+			var home_position: Vector2 = building.global_position
+			var harvest_radius: float = float(building.get("harvest_radius"))
+			var has_resource: bool = _has_reachable_resource_for_home(home_position, harvest_radius, "gold_resource")
+			building.call("set_tree_warning_visible", not has_resource, "No Gold")
 		else:
 			building.call("set_tree_warning_visible", false)
 
@@ -205,6 +231,10 @@ func _begin_placement(building_id: StringName) -> void:
 		active_preview = WOOD_WORKER_BUILDING_SCENE.instantiate()
 	elif building_id == &"worker_meat":
 		active_preview = FOOD_WORKER_BUILDING_SCENE.instantiate()
+	elif building_id == &"worker_gold":
+		active_preview = MINER_WORKER_BUILDING_SCENE.instantiate()
+	if active_preview == null:
+		return
 	active_preview.call("configure", _get_building_config(building_id))
 	active_preview.process_mode = Node.PROCESS_MODE_ALWAYS
 	add_child(active_preview)
@@ -227,9 +257,9 @@ func _cancel_active_preview() -> void:
 	ui_manager.call("set_shop_toggle_enabled", true)
 
 func _confirm_active_preview() -> void:
+	var placement_position: Vector2 = active_preview.global_position
 	if _is_moving_existing_building():
 		var moved_building: Node2D = moving_building
-		var placement_position: Vector2 = active_preview.global_position
 		active_preview = null
 		active_building_id = &""
 		waiting_for_confirm_release = false
@@ -246,7 +276,6 @@ func _confirm_active_preview() -> void:
 		return
 
 	var building_id: StringName = active_building_id
-	var placement_position: Vector2 = active_preview.global_position
 	_cancel_active_preview()
 	var building_config: Dictionary = _get_building_config(building_id)
 
@@ -255,6 +284,10 @@ func _confirm_active_preview() -> void:
 		building = WOOD_WORKER_BUILDING_SCENE.instantiate() as Node2D
 	elif building_id == &"worker_meat":
 		building = FOOD_WORKER_BUILDING_SCENE.instantiate() as Node2D
+	elif building_id == &"worker_gold":
+		building = MINER_WORKER_BUILDING_SCENE.instantiate() as Node2D
+	if building == null:
+		return
 	building.call("configure", building_config)
 	building.global_position = placement_position
 	building.connect("upgrade_requested", Callable(self, "_on_worker_building_upgrade_requested"))
@@ -390,7 +423,7 @@ func get_bottom_ground_region_id(world_position: Vector2) -> int:
 
 	return int(bottom_ground_regions[bottom_cell])
 
-func _set_placement_pause_state(is_paused: bool) -> void:
+func _set_placement_pause_state(_is_paused: bool) -> void:
 	# Placement mode should not pause active gameplay.
 	# Keep time scale at normal speed regardless of placement state.
 	Engine.time_scale = 1.0
@@ -418,15 +451,28 @@ func _spawn_worker_for_building(building_id: StringName, building: Node2D) -> vo
 		worker.connect("food_collected", Callable(self, "_on_food_worker_collected"))
 		worker.connect("tree_availability_changed", Callable(self, "_on_worker_tree_availability_changed").bind(building))
 		building.call("set_tree_warning_visible", not bool(worker.call("has_reachable_tree_target")), "No Sheep")
+	elif building_id == &"worker_gold":
+		var worker: CharacterBody2D = GOLD_WORKER_SCENE.instantiate() as CharacterBody2D
+		worker.global_position = building.global_position + WORKER_HOME_TELEPORT_OFFSET
+		main_building_root.add_child(worker)
+		worker.call("set_assigned_house_position", building.global_position)
+		worker.call("set_assigned_house", building)
+		var harvest_radius: float = float(building.get("harvest_radius"))
+		worker.call("set_harvest_radius", harvest_radius)
+		worker.connect("gold_collected", Callable(self, "_on_gold_worker_collected"))
+		worker.connect("resource_availability_changed", Callable(self, "_on_worker_tree_availability_changed").bind(building))
+		building.call("set_tree_warning_visible", not bool(worker.call("has_reachable_resource_target")), "No Gold")
 
-func _on_worker_tree_availability_changed(has_reachable_tree: bool, building: Node2D) -> void:
+func _on_worker_tree_availability_changed(has_reachable: bool, building: Node2D) -> void:
 	if building == null or not is_instance_valid(building):
 		return
 	var b_id: StringName = building.get("building_id") as StringName
 	if b_id == &"worker_meat":
-		building.call("set_tree_warning_visible", not has_reachable_tree, "No Sheep")
+		building.call("set_tree_warning_visible", not has_reachable, "No Sheep")
+	elif b_id == &"worker_gold":
+		building.call("set_tree_warning_visible", not has_reachable, "No Gold")
 	else:
-		building.call("set_tree_warning_visible", not has_reachable_tree)
+		building.call("set_tree_warning_visible", not has_reachable)
 
 func _get_building_config(building_id: StringName) -> Dictionary:
 	return WORKER_BUILDINGS[building_id].duplicate()
@@ -480,6 +526,10 @@ func _get_tree_resource_bodies() -> Array[PhysicsBody2D]:
 		var tree_body := tree_variant as PhysicsBody2D
 		if tree_body != null:
 			bodies.append(tree_body)
+	for gold_variant in get_tree().get_nodes_in_group("gold_resource"):
+		var gold_body := gold_variant as PhysicsBody2D
+		if gold_body != null:
+			bodies.append(gold_body)
 	return bodies
 
 func _on_wood_worker_collected(amount: int) -> void:
@@ -489,6 +539,10 @@ func _on_wood_worker_collected(amount: int) -> void:
 func _on_food_worker_collected(amount: int) -> void:
 	resources[&"food"] += amount
 	ui_manager.call("set_resource_amount", &"food", resources[&"food"])
+
+func _on_gold_worker_collected(amount: int) -> void:
+	resources[&"gold"] += amount
+	ui_manager.call("set_resource_amount", &"gold", resources[&"gold"])
 
 func _on_worker_building_upgrade_requested(building: Node2D) -> void:
 	if building == null or not is_instance_valid(building):
@@ -534,9 +588,10 @@ func _on_worker_building_upgrade_requested(building: Node2D) -> void:
 	var old_value_color := "#C44B4B"
 	var new_value_color := "#2EA65F"
 	var status_color := new_value_color if resources[&"gold"] >= upgrade_cost else old_value_color
+	var radius_label: String = "Hunt Radius:" if building_id == &"worker_meat" else "Harvest Radius:"
 	var upgrade_details := (
 		"[center][b][color=%s]Current Lv [/color][color=%s]%d[/color][color=%s] -> Next Lv [/color][color=%s]%d[/color][/b][/center]\n\n"
-		+ "[b][color=%s]Harvest Radius:[/color][/b] [color=%s]%.0f[/color][color=%s] -> [/color][color=%s]%.0f[/color] ([color=%s]+%.0f[/color])\n\n"
+		+ "[b][color=%s]%s[/color][/b] [color=%s]%.0f[/color][color=%s] -> [/color][color=%s]%.0f[/color] ([color=%s]+%.0f[/color])\n\n"
 		+ "[b][color=%s]Move Speed:[/color][/b] [color=%s]%.0f[/color][color=%s] -> [/color][color=%s]%.0f[/color] ([color=%s]+%.0f[/color])\n\n"
 		+ "[b][color=%s]Status:[/color][/b] [color=%s]%s[/color]"
 	) % [
@@ -547,6 +602,7 @@ func _on_worker_building_upgrade_requested(building: Node2D) -> void:
 		new_value_color,
 		next_level,
 		dark_text_color,
+		radius_label,
 		old_value_color,
 		current_harvest_radius,
 		dark_text_color,
@@ -957,6 +1013,197 @@ func _spawn_replacement_food_sheep(preferred_position: Vector2) -> void:
 	_register_sheep_resource(new_sheep)
 	call_deferred("_refresh_all_worker_building_collisions")
 
+func _spawn_initial_gold_stones() -> void:
+	if not spawn_random_gold_stones:
+		return
+	if bottom_ground_layer == null:
+		return
+
+	if gold_resources_root == null:
+		gold_resources_root = Node2D.new()
+		gold_resources_root.name = "GoldResources"
+		add_child(gold_resources_root)
+
+	if replace_existing_gold_stones:
+		for child in gold_resources_root.get_children():
+			child.queue_free()
+
+	var candidate_positions: Array[Vector2] = _get_bottom_ground_candidate_positions()
+	if candidate_positions.is_empty():
+		return
+
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+
+	var spawned_positions: Array[Vector2] = []
+	var target_count: int = max(random_gold_stone_count, 0)
+	var attempts_left: int = candidate_positions.size()
+
+	while spawned_positions.size() < target_count and attempts_left > 0 and not candidate_positions.is_empty():
+		attempts_left -= 1
+		var index: int = rng.randi_range(0, candidate_positions.size() - 1)
+		var base_position: Vector2 = candidate_positions[index]
+		candidate_positions.remove_at(index)
+
+		var jittered_position := base_position + Vector2(
+			rng.randf_range(-gold_stone_jitter, gold_stone_jitter),
+			rng.randf_range(-gold_stone_jitter, gold_stone_jitter)
+		)
+		if not _is_valid_gold_stone_position(jittered_position):
+			continue
+
+		var can_place_here: bool = true
+		for existing_position in spawned_positions:
+			var existing_vec: Vector2 = existing_position
+			if existing_vec.distance_to(jittered_position) < gold_stone_min_spacing:
+				can_place_here = false
+				break
+		if not can_place_here:
+			continue
+
+		var gold_stone: Node2D = GOLD_RESOURCE_SCENE.instantiate() as Node2D
+		var tier: int = _pick_weighted_gold_tier(rng)
+		gold_stone.set("stone_tier", tier)
+		gold_stone.global_position = jittered_position
+		gold_resources_root.add_child(gold_stone)
+		_register_gold_resource(gold_stone)
+		spawned_positions.append(jittered_position)
+
+# Minimum clearance distances for gold stone placement.
+const GOLD_STONE_TREE_OBSTACLE_CLEARANCE: float = 100.0
+const GOLD_STONE_RESOURCE_CLEARANCE: float = 80.0
+const GOLD_STONE_BUILDING_CLEARANCE: float = 90.0
+
+func _is_valid_gold_stone_position(world_position: Vector2) -> bool:
+	# Must pass the standard bottom-ground check (no cliffs, no edge tiles).
+	if not _is_valid_bottom_tree_position(world_position):
+		return false
+
+	# Must not be near any tree_obstacle (border trees AND wood resource trees).
+	for obstacle_variant in get_tree().get_nodes_in_group("tree_obstacle"):
+		var obstacle := obstacle_variant as Node2D
+		if obstacle != null and world_position.distance_to(obstacle.global_position) < RESOURCE_BORDER_CLEARANCE:
+			return false
+
+	# Must not be near other gold stones.
+	for gold_variant in get_tree().get_nodes_in_group("gold_resource"):
+		var gold := gold_variant as Node2D
+		if gold != null and world_position.distance_to(gold.global_position) < gold_stone_min_spacing:
+			return false
+
+	# Must not be near sheep.
+	for sheep_variant in get_tree().get_nodes_in_group("food_resource"):
+		var sheep := sheep_variant as Node2D
+		if sheep != null and world_position.distance_to(sheep.global_position) < GOLD_STONE_RESOURCE_CLEARANCE:
+			return false
+
+	# Must not be near buildings or the castle base.
+	for building_variant in get_tree().get_nodes_in_group("worker_building"):
+		var building := building_variant as Node2D
+		if building != null and world_position.distance_to(building.global_position) < GOLD_STONE_BUILDING_CLEARANCE:
+			return false
+	for base_variant in get_tree().get_nodes_in_group("base"):
+		var base_node := base_variant as Node2D
+		if base_node != null and world_position.distance_to(base_node.global_position) < GOLD_STONE_BUILDING_CLEARANCE:
+			return false
+
+	return true
+
+func _pick_weighted_gold_tier(rng: RandomNumberGenerator) -> int:
+	var total_weight: int = 0
+	for tier_key in GOLD_STONE_TIER_WEIGHTS.keys():
+		total_weight += int(GOLD_STONE_TIER_WEIGHTS[tier_key])
+
+	var roll: int = rng.randi_range(1, total_weight)
+	var cumulative: int = 0
+	for tier_key in GOLD_STONE_TIER_WEIGHTS.keys():
+		cumulative += int(GOLD_STONE_TIER_WEIGHTS[tier_key])
+		if roll <= cumulative:
+			return int(tier_key)
+
+	return 3
+
+func _register_existing_gold_resources() -> void:
+	for gold_variant in get_tree().get_nodes_in_group("gold_resource"):
+		var gold_node := gold_variant as Node2D
+		if gold_node != null:
+			_register_gold_resource(gold_node)
+
+func _register_gold_resource(gold_stone: Node2D) -> void:
+	if gold_stone == null or not is_instance_valid(gold_stone):
+		return
+	_refresh_enemy_gold_collision_exceptions(gold_stone)
+	if gold_stone.has_signal("depleted"):
+		var callback := Callable(self, "_on_gold_resource_depleted")
+		if not gold_stone.is_connected("depleted", callback):
+			gold_stone.connect("depleted", callback)
+
+func _refresh_enemy_gold_collision_exceptions(gold_stone: Node2D) -> void:
+	var gold_body := gold_stone as PhysicsBody2D
+	if gold_body == null:
+		return
+
+	for enemy_variant in get_tree().get_nodes_in_group("enemies"):
+		var enemy_body := enemy_variant as PhysicsBody2D
+		if enemy_body != null:
+			enemy_body.add_collision_exception_with(gold_body)
+
+func _on_gold_resource_depleted(gold_stone: Node2D) -> void:
+	var depleted_position: Vector2 = gold_stone.global_position if gold_stone != null and is_instance_valid(gold_stone) else Vector2.ZERO
+	call_deferred("_spawn_replacement_gold_stone", depleted_position)
+
+func _spawn_replacement_gold_stone(preferred_position: Vector2) -> void:
+	if GOLD_RESOURCE_SCENE == null:
+		return
+	if gold_resources_root == null:
+		gold_resources_root = get_node_or_null("GoldResources") as Node2D
+	if gold_resources_root == null:
+		gold_resources_root = Node2D.new()
+		gold_resources_root.name = "GoldResources"
+		add_child(gold_resources_root)
+
+	var spawn_position := _find_valid_gold_spawn_near(preferred_position)
+	if spawn_position == Vector2.INF:
+		return
+
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+
+	var new_gold: Node2D = GOLD_RESOURCE_SCENE.instantiate() as Node2D
+	var tier: int = _pick_weighted_gold_tier(rng)
+	new_gold.set("stone_tier", tier)
+	new_gold.global_position = spawn_position
+	gold_resources_root.add_child(new_gold)
+	_register_gold_resource(new_gold)
+	call_deferred("_refresh_all_worker_building_collisions")
+
+func _find_valid_gold_spawn_near(origin: Vector2) -> Vector2:
+	# Similar to tree spawn near but uses stricter gold-specific validation.
+	var min_radius: float = 140.0
+	var max_radius: float = 320.0
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+
+	for i in 64:
+		var angle: float = rng.randf_range(0.0, TAU)
+		var radius: float = rng.randf_range(min_radius, max_radius)
+		var candidate := origin + Vector2(cos(angle), sin(angle)) * radius
+		if _is_valid_gold_stone_position(candidate):
+			return candidate
+
+	# Fallback deterministic search
+	var ring_steps: int = 32
+	var fallback_radius: float = min_radius
+	while fallback_radius <= max_radius + 300.0:
+		for step in ring_steps:
+			var angle := TAU * float(step) / float(ring_steps)
+			var candidate := origin + Vector2(cos(angle), sin(angle)) * fallback_radius
+			if _is_valid_gold_stone_position(candidate):
+				return candidate
+		fallback_radius += 50.0
+
+	return Vector2.INF
+
 func _get_bottom_ground_candidate_positions() -> Array[Vector2]:
 	var candidates: Array[Vector2] = []
 	var used_cells: Array = bottom_ground_layer.get_used_cells()
@@ -988,7 +1235,41 @@ func _is_valid_bottom_tree_position(world_position: Vector2) -> bool:
 		if not _is_bottom_ground_with_clearance(sample, wood_tree_edge_clearance_radius):
 			return false
 
+	# Ensure clearance from border trees and wood resources
+	for obstacle_variant in get_tree().get_nodes_in_group("tree_obstacle"):
+		var obstacle := obstacle_variant as Node2D
+		if obstacle != null and world_position.distance_to(obstacle.global_position) < RESOURCE_BORDER_CLEARANCE:
+			return false
+
+	if not _is_position_far_enough(world_position, 80.0):
+		return false
+
 	return true
+
+func _is_position_far_enough(pos: Vector2, min_distance: float) -> bool:
+	var distance_sq := min_distance * min_distance
+	for building_variant in get_tree().get_nodes_in_group("worker_building"):
+		var building := building_variant as Node2D
+		if building != null and pos.distance_squared_to(building.global_position) < distance_sq:
+			return false
+	for base_variant in get_tree().get_nodes_in_group("base"):
+		var base_node := base_variant as Node2D
+		if base_node != null and pos.distance_squared_to(base_node.global_position) < distance_sq:
+			return false
+	for tree_variant in get_tree().get_nodes_in_group("wood_resource"):
+		var tree := tree_variant as Node2D
+		if tree != null and pos.distance_squared_to(tree.global_position) < distance_sq:
+			return false
+	for tree_variant in get_tree().get_nodes_in_group("food_resource"):
+		var tree := tree_variant as Node2D
+		if tree != null and pos.distance_squared_to(tree.global_position) < distance_sq:
+			return false
+	for gold_variant in get_tree().get_nodes_in_group("gold_resource"):
+		var gold := gold_variant as Node2D
+		if gold != null and pos.distance_squared_to(gold.global_position) < distance_sq:
+			return false
+	return true
+
 
 func _is_bottom_ground_with_clearance(center: Vector2, clearance_radius: float) -> bool:
 	if get_ground_class_at_world(center) != 2:

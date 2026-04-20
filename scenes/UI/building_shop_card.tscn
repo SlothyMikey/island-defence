@@ -5,6 +5,8 @@
 [ext_resource type="Texture2D" uid="uid://c6wt8jq77c1o2" path="res://assets/Tiny Swords (Free Pack)/UI Elements/UI Elements/Papers/PaperFix.png" id="3_wxqd1"]
 [ext_resource type="Texture2D" uid="uid://c51mm8ks57vcn" path="res://assets/Tiny Swords (Update 010)/UI/Banners/Carved_9Slides.png" id="4_4ss4v"]
 [ext_resource type="Texture2D" uid="uid://o0c8n7t7tc1g" path="res://assets/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_03.png" id="6_ia0uy"]
+[ext_resource type="FontFile" uid="uid://e58eibn26bss" path="res://assets/Fonts/TrueType (.ttf)/PixeloidSans.ttf" id="7_pixeloid_reg"]
+[ext_resource type="FontFile" uid="uid://b3cg5k2w3wvnb" path="res://assets/Fonts/TrueType (.ttf)/PixeloidSans-Bold.ttf" id="8_pixeloid_bold"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_button"]
 
@@ -123,17 +125,21 @@ theme_override_constants/separation = 4
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.278431, 0.172549, 0.0784314, 1)
+theme_override_colors/font_outline_color = Color(0.9, 0.85, 0.7, 1)
+theme_override_constants/outline_size = 3
+theme_override_fonts/font = ExtResource("8_pixeloid_bold")
 theme_override_font_sizes/font_size = 20
 text = "Archery Range"
 
 [node name="DescriptionLabel" type="Label" parent="CardBody/CardPadding/Content/TextColumn" unique_id=366255687]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(280, 34)
+custom_minimum_size = Vector2(280, 44)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_colors/font_color = Color(0.305882, 0.203922, 0.105882, 1)
-theme_override_font_sizes/font_size = 15
+theme_override_fonts/font = ExtResource("7_pixeloid_reg")
+theme_override_font_sizes/font_size = 14
 text = "Trains ranged units and improves your map control."
 autowrap_mode = 3
 
@@ -147,6 +153,7 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.52549, 0.360784, 0.2, 1)
+theme_override_fonts/font = ExtResource("7_pixeloid_reg")
 theme_override_font_sizes/font_size = 13
 text = "Owned: 0"
 
@@ -165,6 +172,9 @@ stretch_mode = 5
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.52549, 0.360784, 0.2, 1)
+theme_override_colors/font_outline_color = Color(0.9, 0.85, 0.7, 1)
+theme_override_constants/outline_size = 3
+theme_override_fonts/font = ExtResource("8_pixeloid_bold")
 theme_override_font_sizes/font_size = 20
 text = "111"
 vertical_alignment = 1

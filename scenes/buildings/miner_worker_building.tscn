@@ -1,0 +1,357 @@
+[gd_scene format=3 uid="uid://miner_worker_building"]
+
+[ext_resource type="Script" path="res://script/buildings/miner_worker_building.gd" id="1_miner"]
+[ext_resource type="Texture2D" path="res://assets/Tiny Swords (Free Pack)/Buildings/Yellow Buildings/House1.png" id="2_miner"]
+[ext_resource type="Texture2D" uid="uid://d1k5yisbc7tk" path="res://assets/Tiny Swords (Update 010)/UI/Pointers/03.png" id="3_h50d4"]
+[ext_resource type="Texture2D" uid="uid://caixn87qfjal1" path="res://assets/Tiny Swords (Update 010)/UI/Pointers/04.png" id="4_h50d4"]
+[ext_resource type="Texture2D" uid="uid://dt7mb638xycen" path="res://assets/Tiny Swords (Update 010)/UI/Pointers/05.png" id="5_h50d4"]
+[ext_resource type="Texture2D" uid="uid://bjvltqu6ofwou" path="res://assets/Tiny Swords (Update 010)/UI/Pointers/06.png" id="6_h8wcc"]
+[ext_resource type="Texture2D" uid="uid://co00jd2cxr1f2" path="res://assets/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_09.png" id="7_ixgaf"]
+[ext_resource type="Texture2D" uid="uid://6qc2twgquw2n" path="res://assets/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_07.png" id="7_lgub7"]
+[ext_resource type="Texture2D" uid="uid://cpyc7r8j0obcw" path="res://assets/Tiny Swords (Update 010)/UI/Pointers/02.png" id="8_bnqlm"]
+[ext_resource type="Texture2D" uid="uid://c6wt8jq77c1o2" path="res://assets/Tiny Swords (Free Pack)/UI Elements/UI Elements/Papers/PaperFix.png" id="10_lgheb"]
+[ext_resource type="Texture2D" uid="uid://dr7okm8pdp2vv" path="res://assets/Tiny Swords (Free Pack)/UI Elements/UI Elements/Buttons/SmallRedRoundButton_Regular.png" id="11_close"]
+[ext_resource type="Texture2D" uid="uid://4rn36m56v2yq" path="res://assets/Tiny Swords (Free Pack)/UI Elements/UI Elements/Buttons/SmallRedRoundButton_Pressed.png" id="12_close_pressed"]
+[ext_resource type="Texture2D" uid="uid://dsby6oy74upau" path="res://assets/Tiny Swords (Update 010)/UI/Icons/Regular_01.png" id="13_0vd4c"]
+[ext_resource type="Texture2D" uid="uid://o0c8n7t7tc1g" path="res://assets/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_03.png" id="14_uy2xx"]
+[ext_resource type="Texture2D" uid="uid://bfch8f7eyc2wk" path="res://assets/Tiny Swords (Update 010)/UI/Buttons/Button_Blue_3Slides.png" id="15_6ow3v"]
+[ext_resource type="Texture2D" uid="uid://bxfxn3xidqcd7" path="res://assets/Tiny Swords (Update 010)/UI/Buttons/Button_Blue_3Slides_Pressed.png" id="16_tobgv"]
+[ext_resource type="Texture2D" uid="uid://bpokhik3waqaq" path="res://assets/Tiny Swords (Update 010)/UI/Buttons/Button_Hover_3Slides.png" id="17_rlpcy"]
+[ext_resource type="Texture2D" uid="uid://b3m7jqjl5mvat" path="res://assets/Tiny Swords (Update 010)/UI/Buttons/Button_Disable_3Slides.png" id="18_0ixfl"]
+[ext_resource type="FontFile" uid="uid://bomi0ms3yvf3h" path="res://assets/Fonts/OpenType (.otf)/PixeloidSans.otf" id="19_font_regular"]
+[ext_resource type="FontFile" uid="uid://1atiu5qkqe3r" path="res://assets/Fonts/OpenType (.otf)/PixeloidSans-Bold.otf" id="20_font_bold"]
+[ext_resource type="Texture2D" uid="uid://cxlnyjh1a6qst" path="res://assets/Tiny Swords (Update 010)/UI/Ribbons/Ribbon_Red_3Slides.png" id="21_warn_ribbon"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_miner"]
+radius = 52.5
+height = 138.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_details_bg"]
+bg_color = Color(0.917647, 0.870588, 0.752941, 0.72)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.560784, 0.494118, 0.380392, 0.65)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[node name="MinerWorkerBuilding" type="Node2D" unique_id=1929986626]
+z_index = 2
+script = ExtResource("1_miner")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+position = Vector2(0, -18)
+texture = ExtResource("2_miner")
+
+[node name="StaticBody2D" type="StaticBody2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D"]
+position = Vector2(0, -11)
+shape = SubResource("CapsuleShape2D_miner")
+
+[node name="PlacementMarkers" type="Node2D" parent="."]
+
+[node name="TopLeft" type="Sprite2D" parent="PlacementMarkers"]
+position = Vector2(-53, -64)
+texture = ExtResource("3_h50d4")
+
+[node name="TopRight" type="Sprite2D" parent="PlacementMarkers"]
+position = Vector2(51, -65)
+texture = ExtResource("4_h50d4")
+
+[node name="BottomLeft" type="Sprite2D" parent="PlacementMarkers"]
+position = Vector2(-54.000004, 57.5)
+texture = ExtResource("5_h50d4")
+
+[node name="BottomRight" type="Sprite2D" parent="PlacementMarkers"]
+position = Vector2(53, 58)
+texture = ExtResource("6_h8wcc")
+
+[node name="StatusNotification" type="Node2D" parent="."]
+visible = false
+modulate = Color(1, 1, 1, 0.7)
+z_index = 12
+position = Vector2(0, -108)
+
+[node name="Banner" type="Sprite2D" parent="StatusNotification"]
+position = Vector2(-4.7683716e-06, -4.500003)
+scale = Vector2(0.96875, 0.7343751)
+texture = ExtResource("21_warn_ribbon")
+
+[node name="Label" type="Label" parent="StatusNotification"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -52.0
+offset_top = -23.0
+offset_right = 54.0
+offset_bottom = -1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.32549, 0.121569, 0.101961, 1)
+theme_override_colors/font_outline_color = Color(0.996078, 0.905882, 0.72549, 0.92)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("20_font_bold")
+theme_override_font_sizes/font_size = 16
+text = "No Gold"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ActionUI" type="Control" parent="."]
+z_index = 10
+layout_mode = 3
+anchors_preset = 0
+offset_left = -104.0
+offset_top = 64.0
+offset_right = 104.0
+offset_bottom = 132.0
+mouse_filter = 1
+
+[node name="ActionPanel" type="Panel" parent="ActionUI"]
+visible = false
+layout_mode = 0
+offset_right = 208.0
+offset_bottom = 68.0
+mouse_filter = 1
+
+[node name="ActionButtons" type="HBoxContainer" parent="ActionUI/ActionPanel"]
+layout_mode = 0
+offset_left = 6.0
+offset_top = 6.0
+offset_right = 202.0
+offset_bottom = 62.0
+theme_override_constants/separation = 6
+
+[node name="UpgradeButton" type="Button" parent="ActionUI/ActionPanel/ActionButtons"]
+custom_minimum_size = Vector2(61, 56)
+layout_mode = 2
+size_flags_horizontal = 3
+icon = ExtResource("7_lgub7")
+icon_alignment = 1
+expand_icon = true
+
+[node name="MoveButton" type="Button" parent="ActionUI/ActionPanel/ActionButtons"]
+custom_minimum_size = Vector2(61, 56)
+layout_mode = 2
+size_flags_horizontal = 3
+icon = ExtResource("8_bnqlm")
+icon_alignment = 1
+expand_icon = true
+
+[node name="RemoveButton" type="Button" parent="ActionUI/ActionPanel/ActionButtons"]
+custom_minimum_size = Vector2(61, 56)
+layout_mode = 2
+size_flags_horizontal = 3
+icon = ExtResource("7_ixgaf")
+icon_alignment = 1
+expand_icon = true
+
+[node name="UpgradeOverlay" type="CanvasLayer" parent="."]
+layer = 20
+
+[node name="UpgradeRoot" type="Control" parent="UpgradeOverlay"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+
+[node name="Dimmer" type="ColorRect" parent="UpgradeOverlay/UpgradeRoot"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+color = Color(0, 0, 0, 0.25)
+
+[node name="UpgradeCenter" type="Control" parent="UpgradeOverlay/UpgradeRoot"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 1.0
+offset_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="UpgradePanel" type="NinePatchRect" parent="UpgradeOverlay/UpgradeRoot/UpgradeCenter"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -284.0
+offset_top = -191.0
+offset_right = 276.0
+offset_bottom = 202.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+texture = ExtResource("10_lgheb")
+
+[node name="CloseButton" type="TextureButton" parent="UpgradeOverlay/UpgradeRoot/UpgradeCenter/UpgradePanel"]
+layout_mode = 0
+offset_left = -28.0
+offset_top = -39.0
+offset_right = 54.0
+offset_bottom = 52.0
+texture_normal = ExtResource("11_close")
+texture_pressed = ExtResource("12_close_pressed")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="TextureRect" type="TextureRect" parent="UpgradeOverlay/UpgradeRoot/UpgradeCenter/UpgradePanel/CloseButton"]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 20.0
+offset_right = 71.0
+offset_bottom = 81.0
+texture = ExtResource("13_0vd4c")
+expand_mode = 1
+
+[node name="UpgradeContent" type="Control" parent="UpgradeOverlay/UpgradeRoot/UpgradeCenter/UpgradePanel"]
+anchors_preset = 0
+offset_left = 20.0
+offset_top = 14.0
+offset_right = 540.0
+offset_bottom = 320.0
+
+[node name="LevelLabel" type="Label" parent="UpgradeOverlay/UpgradeRoot/UpgradeCenter/UpgradePanel/UpgradeContent"]
+layout_mode = 0
+offset_left = 14.0
+offset_top = 24.0
+offset_right = 174.0
+offset_bottom = 60.0
+theme_override_colors/font_color = Color(0.14902, 0.117647, 0.0823529, 1)
+theme_override_fonts/font = ExtResource("19_font_regular")
+theme_override_font_sizes/font_size = 24
+text = "Level 1"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LevelLabel2" type="Label" parent="UpgradeOverlay/UpgradeRoot/UpgradeCenter/UpgradePanel/UpgradeContent"]
+layout_mode = 0
+offset_left = 214.0
+offset_top = 4.0
+offset_right = 488.0
+offset_bottom = 40.0
+theme_override_colors/font_color = Color(0.14902, 0.117647, 0.0823529, 1)
+theme_override_fonts/font = ExtResource("19_font_regular")
+theme_override_font_sizes/font_size = 24
+text = "Miner Building"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BuildingIcon" type="TextureRect" parent="UpgradeOverlay/UpgradeRoot/UpgradeCenter/UpgradePanel/UpgradeContent"]
+layout_mode = 0
+offset_left = -13.0
+offset_top = 73.0
+offset_right = 196.0
+offset_bottom = 289.0
+texture = ExtResource("2_miner")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CostRow" type="Control" parent="UpgradeOverlay/UpgradeRoot/UpgradeCenter/UpgradePanel/UpgradeContent"]
+anchors_preset = 0
+offset_left = 208.0
+offset_top = 136.0
+offset_right = 310.0
+offset_bottom = 172.0
+
+[node name="CostCoinIcon" type="TextureRect" parent="UpgradeOverlay/UpgradeRoot/UpgradeCenter/UpgradePanel/UpgradeContent/CostRow"]
+layout_mode = 0
+offset_left = -158.0
+offset_top = 154.0
+offset_right = -116.0
+offset_bottom = 190.0
+texture = ExtResource("14_uy2xx")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CostLabel" type="Label" parent="UpgradeOverlay/UpgradeRoot/UpgradeCenter/UpgradePanel/UpgradeContent/CostRow"]
+layout_mode = 0
+offset_left = -120.0
+offset_top = 152.0
+offset_right = -68.0
+offset_bottom = 188.0
+theme_override_colors/font_color = Color(0.14902, 0.117647, 0.0823529, 1)
+theme_override_fonts/font = ExtResource("19_font_regular")
+theme_override_font_sizes/font_size = 24
+text = "94"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="InfoSeparator" type="HSeparator" parent="UpgradeOverlay/UpgradeRoot/UpgradeCenter/UpgradePanel/UpgradeContent"]
+layout_mode = 0
+offset_left = 186.0
+offset_top = 40.0
+offset_right = 512.0
+offset_bottom = 56.0
+
+[node name="DetailsPanel" type="Panel" parent="UpgradeOverlay/UpgradeRoot/UpgradeCenter/UpgradePanel/UpgradeContent"]
+layout_mode = 0
+offset_left = 196.0
+offset_top = 70.0
+offset_right = 506.0
+offset_bottom = 285.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_details_bg")
+
+[node name="DetailsLabel" type="RichTextLabel" parent="UpgradeOverlay/UpgradeRoot/UpgradeCenter/UpgradePanel/UpgradeContent/DetailsPanel"]
+layout_mode = 0
+offset_left = 17.0
+offset_top = 16.0
+offset_right = 295.0
+offset_bottom = 92.0
+theme_override_colors/default_color = Color(0.180392, 0.141176, 0.0980392, 1)
+theme_override_fonts/normal_font = ExtResource("19_font_regular")
+theme_override_fonts/bold_font = ExtResource("20_font_bold")
+theme_override_font_sizes/normal_font_size = 15
+bbcode_enabled = true
+text = "Details"
+fit_content = true
+scroll_active = false
+
+[node name="UpgradeButton" type="TextureButton" parent="UpgradeOverlay/UpgradeRoot/UpgradeCenter/UpgradePanel/UpgradeContent"]
+layout_mode = 0
+offset_left = 273.0
+offset_top = 304.0
+offset_right = 431.0
+offset_bottom = 356.0
+texture_normal = ExtResource("15_6ow3v")
+texture_pressed = ExtResource("16_tobgv")
+texture_hover = ExtResource("17_rlpcy")
+texture_disabled = ExtResource("18_0ixfl")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="UpgradeButtonLabel" type="Label" parent="UpgradeOverlay/UpgradeRoot/UpgradeCenter/UpgradePanel/UpgradeContent/UpgradeButton"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -63.0
+offset_top = -24.0
+offset_right = 61.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.145098, 0.121569, 0.0901961, 1)
+theme_override_fonts/font = ExtResource("19_font_regular")
+theme_override_font_sizes/font_size = 20
+text = "Upgrade"
+horizontal_alignment = 1
+vertical_alignment = 1

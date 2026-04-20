@@ -108,8 +108,8 @@ func _get_upgrade_building_name() -> String:
 		return "Worker Building"
 	return name_text
 
-func set_tree_warning_visible(is_visible: bool, message: String = "No Trees") -> void:
-	is_tree_warning_visible = is_visible
+func set_tree_warning_visible(p_visible: bool, message: String = "No Trees") -> void:
+	is_tree_warning_visible = p_visible
 	tree_warning_message = message
 	_apply_tree_warning_visual()
 

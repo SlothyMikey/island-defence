@@ -15,6 +15,9 @@ extends CharacterBody2D
 @export var detour_distance: float = 56.0
 @export_range(0.0, 1.0, 0.05) var detour_forward_weight: float = 0.25
 @export var wall_backoff_distance: float = 48.0
+@export var stuck_free_field_radius: float = 128.0
+@export var stuck_free_field_step: float = 24.0
+@export var stuck_free_field_angles: int = 16
 
 ## NEW: How long the enemy waits at the base before blowing up (in seconds)
 @export var detonate_delay: float = .5 
@@ -25,6 +28,7 @@ var is_detonating: bool = false
 
 @onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var damage_spawn_point: Marker2D = $DamageSpawnPoint
+@onready var body_collision_shape: CollisionShape2D = $CollisionShape2D
 
 var target: Node2D = null
 var route_points: Array[Vector2] = []
@@ -54,6 +58,11 @@ func _ignore_resource_collisions() -> void:
 		var sheep_body := sheep_variant as PhysicsBody2D
 		if sheep_body != null:
 			add_collision_exception_with(sheep_body)
+
+	for gold_variant in get_tree().get_nodes_in_group("gold_resource"):
+		var gold_body := gold_variant as PhysicsBody2D
+		if gold_body != null:
+			add_collision_exception_with(gold_body)
 
 func _build_route() -> void:
 	if target == null:
@@ -165,6 +174,8 @@ func take_damage(amount: int) -> void:
 			world.resources[&"gold"] += gold_drop_amount
 			if "ui_manager" in world and world.ui_manager != null:
 				world.ui_manager.call("set_resource_amount", &"gold", world.resources[&"gold"])
+			if world.has_method("_refresh_building_availability"):
+				world.call("_refresh_building_availability")
 		
 		# Play death animation before freeing
 		animated_sprite.play("death")
@@ -254,10 +265,54 @@ func _insert_escape_waypoints(backoff_direction: Vector2, detour_direction: Vect
 
 	var backoff_point: Vector2 = global_position + backoff_direction * wall_backoff_distance
 	var detour_point: Vector2 = backoff_point + detour_direction * detour_distance
+	var safe_backoff_point: Vector2 = _find_nearby_free_field(backoff_point)
+	var safe_detour_point: Vector2 = _find_nearby_free_field(detour_point)
 
 	if current_route_index < route_points.size():
-		route_points.insert(current_route_index, detour_point)
-		route_points.insert(current_route_index, backoff_point)
+		route_points.insert(current_route_index, safe_detour_point)
+		route_points.insert(current_route_index, safe_backoff_point)
 	else:
-		route_points.append(backoff_point)
-		route_points.append(detour_point)
+		route_points.append(safe_backoff_point)
+		route_points.append(safe_detour_point)
+
+func _find_nearby_free_field(preferred_position: Vector2) -> Vector2:
+	if _is_position_free_for_enemy(preferred_position):
+		return preferred_position
+
+	var max_radius: float = maxf(stuck_free_field_radius, 0.0)
+	var step: float = maxf(stuck_free_field_step, 8.0)
+	var angle_count: int = maxi(stuck_free_field_angles, 8)
+
+	var radius: float = step
+	while radius <= max_radius:
+		for i in angle_count:
+			var angle: float = (TAU * float(i)) / float(angle_count)
+			var candidate := global_position + Vector2(cos(angle), sin(angle)) * radius
+			if _is_position_free_for_enemy(candidate):
+				return candidate
+		radius += step
+
+	return preferred_position
+
+func _is_position_free_for_enemy(candidate_position: Vector2) -> bool:
+	if body_collision_shape == null or body_collision_shape.shape == null:
+		return true
+
+	var query := PhysicsShapeQueryParameters2D.new()
+	query.shape = body_collision_shape.shape
+	var shape_offset: Vector2 = body_collision_shape.position.rotated(global_rotation)
+	query.transform = Transform2D(global_rotation, candidate_position + shape_offset)
+	query.collide_with_bodies = true
+	query.collide_with_areas = true
+	query.exclude = [self]
+
+	var hits: Array = get_world_2d().direct_space_state.intersect_shape(query, 8)
+	for hit_variant in hits:
+		var hit: Dictionary = hit_variant as Dictionary
+		var collider_obj: Object = hit.get("collider") as Object
+		if collider_obj == null:
+			continue
+		return false
+
+	return true
+

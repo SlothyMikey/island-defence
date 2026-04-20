@@ -1,0 +1,71 @@
+[gd_scene format=3 uid="uid://gold_resource_scene"]
+
+[ext_resource type="Script" path="res://script/resources/gold_resource.gd" id="1_gold_res"]
+[ext_resource type="Texture2D" path="res://assets/Tiny Swords (Free Pack)/Terrain/Resources/Gold/Gold Stones/Gold Stone 2_Highlight.png" id="2_gold_tex"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f0"]
+atlas = ExtResource("2_gold_tex")
+region = Rect2(0, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f1"]
+atlas = ExtResource("2_gold_tex")
+region = Rect2(128, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f2"]
+atlas = ExtResource("2_gold_tex")
+region = Rect2(256, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f3"]
+atlas = ExtResource("2_gold_tex")
+region = Rect2(384, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f4"]
+atlas = ExtResource("2_gold_tex")
+region = Rect2(512, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f5"]
+atlas = ExtResource("2_gold_tex")
+region = Rect2(640, 0, 128, 128)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_gold"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f3")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f4")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f5")
+}],
+"loop": true,
+"name": &"default",
+"speed": 8.0
+}]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_gold"]
+radius = 10.0
+
+[node name="GoldResource" type="StaticBody2D" groups=["gold_resource"]]
+z_index = 5
+script = ExtResource("1_gold_res")
+
+[node name="Sprite2D" type="AnimatedSprite2D" parent="."]
+position = Vector2(0, -8)
+scale = Vector2(0.6, 0.6)
+sprite_frames = SubResource("SpriteFrames_gold")
+animation = &"default"
+autoplay = "default"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_gold")

@@ -1,7 +1,7 @@
 extends StaticBody2D
 
 # Castle base logic: tracks health and updates the on-screen health bar.
-@export var max_health: int = 100
+@export var max_health: int = 500
 var current_health: int
 
 @onready var health_bar: ProgressBar = $HealthBar
@@ -24,6 +24,12 @@ func take_damage(amount: int) -> void:
 func update_health_bar() -> void:
 	health_bar.max_value = max_health
 	health_bar.value = current_health
+	
+	if get_tree() != null:
+		var world := get_tree().current_scene
+		if world != null and "ui_manager" in world and world.ui_manager != null:
+			if world.ui_manager.has_method("set_base_health"):
+				world.ui_manager.call("set_base_health", current_health, max_health)
 	
 	var percentage := float(current_health) / float(max_health)
 	
